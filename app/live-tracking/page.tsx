@@ -101,7 +101,7 @@ function VesselDetailPanel({ vesselId, onClose }: { vesselId: string; onClose: (
   const typeColor = vesselTypeColor[v.type] ?? "bg-slate-100 text-slate-700";
 
   return (
-    <div className="w-[270px] flex-shrink-0 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col overflow-hidden overflow-y-auto" style={{ maxHeight: "100%" }}>
+    <div className="w-full lg:w-[270px] flex-shrink-0 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col overflow-hidden overflow-y-auto" style={{ maxHeight: "100%" }}>
       {/* Ship illustration */}
       <div className="relative w-full flex-shrink-0" style={{ height: 120 }}>
         <svg viewBox="0 0 270 120" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -256,7 +256,7 @@ function TruckDetailPanel({ truckId, onClose }: { truckId: string; onClose: () =
   const stars = Array.from({ length: 5 }, (_, i) => i < Math.round(t.rating));
 
   return (
-    <div className="w-[270px] flex-shrink-0 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col overflow-hidden overflow-y-auto" style={{ maxHeight: "100%" }}>
+    <div className="w-full lg:w-[270px] flex-shrink-0 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col overflow-hidden overflow-y-auto" style={{ maxHeight: "100%" }}>
       {/* Truck image */}
       <div className="relative w-full flex-shrink-0 overflow-hidden" style={{ height: 120 }}>
         <Image src="/truck1.png" alt={t.plateNumber} fill style={{ objectFit: "cover", objectPosition: "center" }} />
@@ -402,14 +402,14 @@ export default function LiveTrackingPage() {
     <DashboardLayout>
       <div className="flex flex-col gap-4 h-full">
         {/* Header row */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div>
             <h1 className="text-lg font-bold text-slate-800">Live Tracking</h1>
             <p className="text-xs text-slate-500">
               {vessels.length} kapal · {trucks.length} truk aktif terpantau secara real-time
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
             <span className="flex items-center gap-1">
               <span className="w-2.5 h-2.5 rounded-full bg-[#1e2d4d] inline-block"/>Oil Tanker
             </span>
@@ -428,11 +428,11 @@ export default function LiveTrackingPage() {
           </div>
         </div>
 
-        {/* Main 3-column layout */}
-        <div className="flex gap-3 flex-1 min-h-0" style={{ height: "calc(100vh - 180px)" }}>
+        {/* Main layout — column on mobile/tablet, 3-col row on lg+ */}
+        <div className="flex flex-col lg:flex-row gap-3 flex-1 min-h-0 lg:h-[calc(100vh-180px)]">
 
           {/* ── Left panel: list ─────────────────────────────────────────── */}
-          <div className="w-[240px] flex-shrink-0 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col overflow-hidden">
+          <div className="lg:w-[240px] flex-shrink-0 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col overflow-hidden max-h-[45vh] lg:max-h-none">
             {/* Search */}
             <div className="p-3 border-b border-slate-100">
               <div className="flex items-center gap-2 px-3 h-8 bg-slate-50 rounded-lg">
@@ -545,7 +545,7 @@ export default function LiveTrackingPage() {
           </div>
 
           {/* ── Center: map ──────────────────────────────────────────────── */}
-          <div className="flex-1 min-w-0 rounded-2xl overflow-hidden shadow-sm border border-slate-100 relative">
+          <div className="flex-1 min-w-0 rounded-2xl overflow-hidden shadow-sm border border-slate-100 relative min-h-[320px] lg:min-h-0">
             <LiveTrackingMap
               vessels={vessels}
               trucks={trucks}
@@ -596,7 +596,7 @@ export default function LiveTrackingPage() {
               <TruckDetailPanel truckId={selected.id} onClose={() => setSelected(null)} />
             )
           ) : (
-            <div className="w-[270px] flex-shrink-0 bg-white/60 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center justify-center gap-3 text-slate-400">
+            <div className="hidden lg:flex lg:w-[270px] flex-shrink-0 bg-white/60 rounded-2xl border border-dashed border-slate-200 flex-col items-center justify-center gap-3 text-slate-400">
               <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
                 <Camera size={22} className="text-slate-300"/>
               </div>

@@ -56,7 +56,11 @@ const subModules = [
   { label: "Distribution", href: "/distribution" },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  onMobileClose?: () => void;
+}
+
+export default function Sidebar({ onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -64,7 +68,7 @@ export default function Sidebar() {
     <div className="flex flex-col gap-3 min-h-screen">
       {/* Main Sidebar */}
       <aside
-        className={`ml-[19px] mt-[27px] h-full rounded-xl relative flex flex-col transition-all duration-300 bg-white border-r border-slate-200 ${
+        className={`ml-0 mt-0 md:ml-[19px] md:mt-[27px] min-h-[calc(100vh-20vh)] bg-white rounded-xl relative flex flex-col transition-all duration-300  border-r border-slate-200 ${
           collapsed ? "w-16" : "w-[210px]"
         }`}
       >
@@ -87,10 +91,10 @@ export default function Sidebar() {
           )}
         </div>
 
-        {/* Collapse Button */}
+        {/* Collapse Button — desktop only */}
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-6 top-[45%] z-20 flex items-center justify-center text-slate-500 transition-colors"
+          className="absolute -right-6 top-[45%] z-20 hidden lg:flex items-center justify-center text-slate-500 transition-colors"
         >
           {collapsed ? (
             <img
@@ -119,6 +123,7 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 title={collapsed ? item.label : undefined}
+                onClick={onMobileClose}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all duration-150 ${
                   active
                     ? "bg-[#1e2d4d] shadow-sm"
@@ -157,7 +162,7 @@ export default function Sidebar() {
 
       {/* Modules & Bottom */}
       <div
-        className={`ml-[19px] rounded-xl bg-white  transition-all duration-300 ${
+        className={`ml-0 md:ml-[19px] rounded-xl bg-white  transition-all duration-300 ${
           collapsed ? "w-16" : "w-[210px]"
         }`}
       >

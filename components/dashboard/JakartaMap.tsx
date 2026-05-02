@@ -54,9 +54,17 @@ export default function JakartaMap({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((containerRef.current as any)._leaflet_id) return;
 
+    let aborted = false;
+
     const initMap = async () => {
       const L = (await import("leaflet")).default;
       await import("leaflet/dist/leaflet.css");
+
+      // Bail out if the effect was cleaned up while imports were loading,
+      // or if another initMap call already initialized this container.
+      if (aborted || !containerRef.current) return;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      if ((containerRef.current as any)._leaflet_id) return;
 
       const map = L.map(containerRef.current!, {
         center: [truckLat, truckLng],
@@ -124,6 +132,7 @@ export default function JakartaMap({
     initMap().catch(console.error);
 
     return () => {
+      aborted = true;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;

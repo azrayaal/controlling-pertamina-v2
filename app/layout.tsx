@@ -10,6 +10,9 @@ const geist = Geist({
 export const metadata: Metadata = {
   title: "Pertamina Oil Monitoring – Integrated Control Dashboard",
   description: "Pertamina integrated monitoring & control system for upstream, logistics, distribution, live tracking, and CCTV.",
+  icons: {
+    icon: "/icon_small.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

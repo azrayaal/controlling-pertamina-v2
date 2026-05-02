@@ -115,10 +115,10 @@ export default function LiveTrackingSection() {
         </div>
       </div>
 
-      {/* Body */}
-      <div className="flex flex-1 min-h-0">
+      {/* Body — stacked on mobile, side-by-side on md+ */}
+      <div className="flex flex-col md:flex-row flex-1 min-h-0">
         {/* Map */}
-        <div className="relative flex-1 min-w-0 overflow-hidden">
+        <div className="relative flex-1 min-w-0 overflow-hidden min-h-[260px] md:min-h-0">
           <JakartaMap
             trucks={trucks}
             selectedTruckId={selectedId}
@@ -135,7 +135,7 @@ export default function LiveTrackingSection() {
         </div>
 
         {/* Vehicle detail panel */}
-        <div className="w-[220px] flex-shrink-0 border-l border-slate-100 flex flex-col overflow-y-auto bg-white">
+        <div className="md:w-[220px] flex-shrink-0 border-t md:border-t-0 md:border-l border-slate-100 flex flex-col overflow-y-auto bg-white max-h-[380px] md:max-h-none">
           {/* Truck photo */}
           <div className="relative w-full flex-shrink-0 overflow-hidden bg-slate-100" style={{ height: 100 }}>
             <Image

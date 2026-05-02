@@ -12,14 +12,14 @@ export default function DashboardPage() {
         <StatsCards />
         <DistributionChart />
 
-        {/* Live Tracking + Live Alerts — same height row */}
-        <div className="flex gap-4" style={{ height: 660 }}>
+        {/* Live Tracking + Live Alerts — stacked on mobile, side-by-side on xl */}
+        <div className="flex flex-col xl:flex-row gap-4 xl:h-[660px]">
           {/* Tracking card fills remaining width */}
-          <div className="flex-1 min-w-0 flex flex-col">
+          <div className="flex-1 min-w-0 flex flex-col min-h-[420px] xl:min-h-0">
             <LiveTrackingSection />
           </div>
-          {/* Alerts panel fixed width, same height */}
-          <div className="w-72 flex-shrink-0 flex flex-col">
+          {/* Alerts panel: full-width on mobile, fixed sidebar on xl */}
+          <div className="xl:w-72 flex-shrink-0 flex flex-col min-h-[320px] xl:min-h-0">
             <LiveAlertsPanel />
           </div>
         </div>
