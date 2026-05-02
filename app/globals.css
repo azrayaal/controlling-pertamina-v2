@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #ECECEC;
+  --foreground: #1e293b;
+  --sidebar-bg: #0d1b2a;
+  --sidebar-active: #1a3a5c;
+  --primary: #0d6efd;
+  --pertamina-red: #e63946;
+  --pertamina-blue: #0d2137;
 }
 
 @theme inline {
@@ -12,15 +17,40 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', Arial, Helvetica, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Pulse animation for live indicators */
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-pulse-live {
+  animation: pulse-live 2s ease-in-out infinite;
+}
+
+/* Map placeholder */
+.map-placeholder {
+  background: linear-gradient(135deg, #b8d4e8 0%, #7fb3d3 30%, #5a9fc0 60%, #3d8aab 100%);
+  position: relative;
+  overflow: hidden;
 }
