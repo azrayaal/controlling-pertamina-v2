@@ -74,12 +74,26 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>(() => {
-    return { "/stock-opname": true };
+    // Auto-open the submenu whose route matches the current path on first render
+    const initial: Record<string, boolean> = {};
+    // pathname is stable at init time via closure captured in the factory fn
+    return initial;
   });
 
+  // Auto-open the correct submenu when the path changes (e.g. on first load or navigation)
+  // We derive the open state from the pathname so it's always correct
+  const activeParent = navItems.find(
+    (item) => item.subItems && pathname.startsWith(item.href)
+  )?.href ?? null;
+
   const toggleMenu = (href: string) => {
-    setOpenMenus((prev) => ({ ...prev, [href]: !prev[href] }));
+    // Accordion behaviour: close every other submenu, toggle only the clicked one
+    setOpenMenus((prev) => ({ [href]: !prev[href] }));
   };
+
+  // A submenu is open if it was explicitly opened OR if it is the active parent route
+  const isMenuOpen = (href: string) =>
+    openMenus[href] !== undefined ? openMenus[href] : href === activeParent;
 
   return (
     <div className="flex flex-col gap-3 min-h-screen">
@@ -135,7 +149,7 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
               pathname === item.href ||
               pathname.startsWith(item.href + "/");
             const hasSubItems = item.subItems && item.subItems.length > 0;
-            const isOpen = openMenus[item.href];
+            const isOpen = isMenuOpen(item.href);
 
             return (
               <div key={item.href}>
