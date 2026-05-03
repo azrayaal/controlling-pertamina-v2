@@ -6,13 +6,24 @@ import Image from "next/image";
 import {
   Settings,
   LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Layers,
+  ChevronDown,
 } from "lucide-react";
 import { useState } from "react";
 
-const navItems = [
+interface SubItem {
+  label: string;
+  icon: string;
+  href: string;
+}
+
+interface NavItem {
+  label: string;
+  icon: string;
+  href: string;
+  subItems?: SubItem[];
+}
+
+const navItems: NavItem[] = [
   {
     label: "Dashboard",
     icon: "/dashboard.png",
@@ -22,6 +33,11 @@ const navItems = [
     label: "Stock Opname",
     icon: "/stockopname.png",
     href: "/stock-opname",
+    subItems: [
+      { label: "Production", icon: "/poduction.png", href: "/stock-opname/production" },
+      { label: "Refinery", icon: "/refinery.png", href: "/stock-opname/refinery" },
+      { label: "Storage", icon: "/storage.png", href: "/stock-opname/storage" },
+    ],
   },
   {
     label: "Controlling Cabang",
@@ -50,12 +66,6 @@ const navItems = [
   },
 ];
 
-const subModules = [
-  { label: "Upstream", href: "/upstream" },
-  { label: "Logistics", href: "/logistics" },
-  { label: "Distribution", href: "/distribution" },
-];
-
 interface SidebarProps {
   onMobileClose?: () => void;
 }
@@ -63,6 +73,13 @@ interface SidebarProps {
 export default function Sidebar({ onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [openMenus, setOpenMenus] = useState<Record<string, boolean>>(() => {
+    return { "/stock-opname": true };
+  });
+
+  const toggleMenu = (href: string) => {
+    setOpenMenus((prev) => ({ ...prev, [href]: !prev[href] }));
+  };
 
   return (
     <div className="flex flex-col gap-3 min-h-screen">
@@ -117,44 +134,133 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
             const active =
               pathname === item.href ||
               pathname.startsWith(item.href + "/");
+            const hasSubItems = item.subItems && item.subItems.length > 0;
+            const isOpen = openMenus[item.href];
 
             return (
-              <Link
-                key={item.href}
-                href={item.href}
-                title={collapsed ? item.label : undefined}
-                onClick={onMobileClose}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all duration-150 ${
-                  active
-                    ? "bg-[#1e2d4d] shadow-sm"
-                    : "hover:bg-slate-100"
-                }`}
-              >
-                <div className="relative w-[18px] h-[18px] flex-shrink-0">
-                  <Image
-                    src={item.icon}
-                    alt={item.label}
-                    fill
-                    sizes="18px"
-                    className="object-contain"
-                    style={{
-                      filter: active
-                        ? "brightness(0) invert(1)"
-                        : "brightness(0) saturate(0) opacity(0.65)",
-                    }}
-                  />
-                </div>
-
-                {!collapsed && (
-                  <span
-                    className={`text-[13px] leading-tight whitespace-nowrap font-medium ${
-                      active ? "text-white" : "text-slate-700"
+              <div key={item.href}>
+                {hasSubItems ? (
+                  <button
+                    onClick={() => toggleMenu(item.href)}
+                    title={collapsed ? item.label : undefined}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all duration-150 ${
+                      active
+                        ? "bg-[#1e2d4d] shadow-sm"
+                        : "hover:bg-slate-100"
                     }`}
                   >
-                    {item.label}
-                  </span>
+                    <div className="relative w-[18px] h-[18px] flex-shrink-0">
+                      <Image
+                        src={item.icon}
+                        alt={item.label}
+                        fill
+                        sizes="18px"
+                        className="object-contain"
+                        style={{
+                          filter: active
+                            ? "brightness(0) invert(1)"
+                            : "brightness(0) saturate(0) opacity(0.65)",
+                        }}
+                      />
+                    </div>
+                    {!collapsed && (
+                      <>
+                        <span
+                          className={`flex-1 text-left text-[13px] leading-tight whitespace-nowrap font-medium ${
+                            active ? "text-white" : "text-slate-700"
+                          }`}
+                        >
+                          {item.label}
+                        </span>
+                        <ChevronDown
+                          size={13}
+                          className={`flex-shrink-0 transition-transform duration-200 ${
+                            active ? "text-white" : "text-slate-400"
+                          } ${isOpen ? "rotate-180" : ""}`}
+                        />
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <Link
+                    href={item.href}
+                    title={collapsed ? item.label : undefined}
+                    onClick={onMobileClose}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all duration-150 ${
+                      active
+                        ? "bg-[#1e2d4d] shadow-sm"
+                        : "hover:bg-slate-100"
+                    }`}
+                  >
+                    <div className="relative w-[18px] h-[18px] flex-shrink-0">
+                      <Image
+                        src={item.icon}
+                        alt={item.label}
+                        fill
+                        sizes="18px"
+                        className="object-contain"
+                        style={{
+                          filter: active
+                            ? "brightness(0) invert(1)"
+                            : "brightness(0) saturate(0) opacity(0.65)",
+                        }}
+                      />
+                    </div>
+                    {!collapsed && (
+                      <span
+                        className={`text-[13px] leading-tight whitespace-nowrap font-medium ${
+                          active ? "text-white" : "text-slate-700"
+                        }`}
+                      >
+                        {item.label}
+                      </span>
+                    )}
+                  </Link>
                 )}
-              </Link>
+
+                {/* Submenu */}
+                {hasSubItems && isOpen && !collapsed && (
+                  <div className="ml-2 mb-1 pl-3 border-l border-slate-200">
+                    {item.subItems!.map((sub) => {
+                      const subActive = pathname === sub.href || pathname.startsWith(sub.href + "/");
+                      return (
+                        <Link
+                          key={sub.href}
+                          href={sub.href}
+                          onClick={onMobileClose}
+                          className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg mb-0.5 transition-all duration-150 ${
+                            subActive
+                              ? "bg-[#EEEDFA] text-[#1e2d4d]"
+                              : "hover:bg-slate-50 text-slate-500"
+                          }`}
+                        >
+                          <div className="relative w-[14px] h-[14px] flex-shrink-0">
+                            <Image
+                              src={sub.icon}
+                              alt={sub.label}
+                              fill
+                              sizes="14px"
+                              className="object-contain"
+                              style={{
+                                filter: subActive
+                                  ? "brightness(0) saturate(100%) invert(13%) sepia(60%) saturate(500%) hue-rotate(200deg)"
+                                  : "brightness(0) saturate(0) opacity(0.5)",
+                              }}
+                            />
+                          </div>
+                          <span
+                            className={`text-[12px] leading-tight whitespace-nowrap font-medium ${
+                              subActive ? "text-[#1e2d4d]" : "text-slate-500"
+                            }`}
+                          >
+                            {sub.label}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </nav>
