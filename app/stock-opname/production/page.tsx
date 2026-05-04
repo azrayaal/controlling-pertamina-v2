@@ -1,19 +1,21 @@
 "use client";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import LocationMap from "@/components/dashboard/LocationMap";
 import { useState } from "react";
 import {
   Droplets,
   Flame,
   CheckCircle2,
   ShieldCheck,
-  Calendar,
+  BarChart2,
   TrendingUp,
   MapPin,
   Video,
   AlertTriangle,
   ChevronRight,
   Radio,
+  Sparkles,
 } from "lucide-react";
 
 const statCards = [
@@ -21,7 +23,7 @@ const statCards = [
     label: "Total Oil Production",
     value: "1.2M",
     unit: "BOPD",
-    change: "+2.1% vs preferred",
+    change: "+2.1% vs yesterday",
     positive: true,
     icon: Droplets,
     color: "blue",
@@ -54,16 +56,16 @@ const statCards = [
     color: "emerald",
   },
   {
-    label: "Active Weeks",
+    label: "Active Blocks",
     value: "10",
     unit: "",
-    change: "112 Total",
+    change: "12 Blok Total",
     positive: true,
-    icon: Calendar,
+    icon: BarChart2,
     color: "purple",
   },
   {
-    label: "Production vs Deviation",
+    label: "Production Deviation",
     value: "+2.1%",
     unit: "",
     change: "Above Target",
@@ -81,6 +83,15 @@ const upstreamBlocks = [
     type: "Onshore",
     rate: 165000,
     status: "Active",
+    lat: 0.88,
+    lng: 101.38,
+    wells: 144,
+    tags: [
+      { label: "+4 aktif", color: "emerald" },
+      { label: "+1 warn", color: "amber" },
+      { label: "+2 idle", color: "slate" },
+      { label: "18 lainnya", color: "slate" },
+    ],
   },
   {
     id: 2,
@@ -89,22 +100,46 @@ const upstreamBlocks = [
     type: "Onshore",
     rate: 25000,
     status: "Active",
+    lat: -7.15,
+    lng: 111.58,
+    wells: 97,
+    tags: [
+      { label: "+4 aktif", color: "emerald" },
+      { label: "+1 warn", color: "amber" },
+      { label: "+2 idle", color: "slate" },
+      { label: "18 lainnya", color: "slate" },
+    ],
   },
   {
     id: 3,
     name: "Blok Mahakam",
-    region: "Kalimantan",
+    region: "Kalimantan Timur",
     type: "Onshore",
     rate: 18000,
     status: "Active",
+    lat: -0.30,
+    lng: 117.40,
+    wells: 103,
+    tags: [
+      { label: "+2 aktif", color: "emerald" },
+      { label: "+1 warn", color: "amber" },
+      { label: "+3 idle", color: "slate" },
+    ],
   },
   {
     id: 4,
-    name: "Blok ONBES",
+    name: "Blok OSEB",
     region: "Sumatera Selatan",
     type: "Offshore",
     rate: 22000,
     status: "Active",
+    lat: -3.0,
+    lng: 105.8,
+    wells: 53,
+    tags: [
+      { label: "+4 aktif", color: "emerald" },
+      { label: "+4 idle", color: "slate" },
+    ],
   },
   {
     id: 5,
@@ -113,6 +148,13 @@ const upstreamBlocks = [
     type: "Offshore",
     rate: 15000,
     status: "Active",
+    lat: -6.8,
+    lng: 112.52,
+    wells: 32,
+    tags: [
+      { label: "+3 aktif", color: "emerald" },
+      { label: "+2 idle", color: "slate" },
+    ],
   },
   {
     id: 6,
@@ -121,33 +163,137 @@ const upstreamBlocks = [
     type: "Onshore",
     rate: 12000,
     status: "Maintenance",
+    lat: -3.5,
+    lng: 103.5,
+    wells: 28,
+    tags: [
+      { label: "+2 aktif", color: "emerald" },
+      { label: "+1 warn", color: "amber" },
+    ],
+  },
+  {
+    id: 7,
+    name: "Blok Kampar",
+    region: "Riau, Sumatera",
+    type: "Onshore",
+    rate: 9500,
+    status: "Active",
+    lat: 0.42,
+    lng: 101.15,
+    wells: 64,
+    tags: [
+      { label: "+3 aktif", color: "emerald" },
+      { label: "+1 warn", color: "amber" },
+      { label: "+2 idle", color: "slate" },
+    ],
+  },
+  {
+    id: 8,
+    name: "Blok Siak",
+    region: "Riau, Sumatera",
+    type: "Onshore",
+    rate: 8200,
+    status: "Active",
+    lat: 0.85,
+    lng: 102.1,
+    wells: 58,
+    tags: [
+      { label: "+3 aktif", color: "emerald" },
+      { label: "+2 idle", color: "slate" },
+    ],
+  },
+  {
+    id: 9,
+    name: "Blok Masela",
+    region: "Maluku",
+    type: "Offshore",
+    rate: 6800,
+    status: "Active",
+    lat: -8.32,
+    lng: 130.27,
+    wells: 21,
+    tags: [
+      { label: "+2 aktif", color: "emerald" },
+      { label: "+1 idle", color: "slate" },
+    ],
+  },
+  {
+    id: 10,
+    name: "Blok Arafura",
+    region: "Papua",
+    type: "Offshore",
+    rate: 5400,
+    status: "Active",
+    lat: -6.5,
+    lng: 135.0,
+    wells: 18,
+    tags: [
+      { label: "+2 aktif", color: "emerald" },
+      { label: "+1 idle", color: "slate" },
+    ],
+  },
+  {
+    id: 11,
+    name: "Blok Kepala Burung",
+    region: "Papua Barat",
+    type: "Onshore",
+    rate: 4200,
+    status: "Maintenance",
+    lat: -1.02,
+    lng: 132.55,
+    wells: 15,
+    tags: [
+      { label: "+1 aktif", color: "emerald" },
+      { label: "+1 warn", color: "amber" },
+    ],
+  },
+  {
+    id: 12,
+    name: "Blok Rimau",
+    region: "Sumatera Selatan",
+    type: "Onshore",
+    rate: 7100,
+    status: "Active",
+    lat: -3.8,
+    lng: 104.6,
+    wells: 44,
+    tags: [
+      { label: "+3 aktif", color: "emerald" },
+      { label: "+1 idle", color: "slate" },
+    ],
   },
 ];
 
 const cctvFeeds = [
-  { id: 1, label: "Pump Area — WMG-01A", live: true },
-  { id: 2, label: "Pipeline Junction B-5", live: true },
-  { id: 3, label: "Wellhead Gate C", live: false },
-  { id: 4, label: "Security Gate North", live: true },
-  { id: 5, label: "Storage Tank D-12", live: false },
-  { id: 6, label: "Flare Stack Monitor", live: true },
+  { id: 1, label: "Pump Area — WMG-01A", live: true, cam: "C1" },
+  { id: 2, label: "Pipeline Junction B-5", live: true, cam: "C2" },
+  { id: 3, label: "Wellhead Gate C-13", live: true, cam: "C3" },
+  { id: 4, label: "Security Gate North", live: false, cam: "C4" },
+  { id: 5, label: "Storage Tank D-12", live: false, cam: "C5", signalLost: true },
+  { id: 6, label: "Flare Stack Monitor", live: true, cam: "C6" },
 ];
 
 const anomalies = [
   {
     type: "warning",
     title: "Pressure Drop",
-    detail: "Blok Rokan, Well A-12 (13%)",
+    detail: "Blok Rokan, Well A-11 (13%)",
+    aiSuggestion:
+      "Instalasi pompa dan perapatan jalur pipa dari WA-A.11. Rekomendasi: monitor tekanan dalam 24 jam untuk membantu mengikuti pemantauan pabuda ICPH tinggi.",
   },
   {
     type: "alert",
     title: "Flaring Anomaly",
     detail: "Upstream C — above +44%",
+    aiSuggestion:
+      "Kurangi injeksi gas konvension dan aktifkan flare management system. Koordinasi dengan operasion Platform C untuk menjaga kecepatan air valve.",
   },
   {
     type: "info",
     title: "Production Deviation",
     detail: "+2.1% above target",
+    aiSuggestion:
+      "Pertahankan kondisi operasi optimal. Manfaatkan surplus (excess) kerja mempersiapkan persyaratan buffer storage Terminal Salangan.",
   },
 ];
 
@@ -160,17 +306,30 @@ const wellPerformance = [
 ];
 
 const targetActualData = [
-  { time: "06:00", target: 70, actual: 68 },
-  { time: "08:00", target: 72, actual: 73 },
-  { time: "10:00", target: 74, actual: 72 },
-  { time: "12:00", target: 74, actual: 76 },
-  { time: "14:00", target: 75, actual: 77 },
-  { time: "16:00", target: 75, actual: 75 },
-  { time: "18:00", target: 74, actual: 74 },
-  { time: "20:00", target: 73, actual: 72 },
+  { time: "01 Mar", target: 128, actual: 120 },
+  { time: "Mar W1", target: 130, actual: 125 },
+  { time: "Mar W2", target: 132, actual: 130 },
+  { time: "Mar W3", target: 131, actual: 132 },
+  { time: "Apr M1", target: 133, actual: 128 },
+  { time: "Apr W1", target: 134, actual: 135 },
+  { time: "Apr W2", target: 135, actual: 133 },
+  { time: "Mai W1", target: 136, actual: 134 },
+  { time: "Mai W2", target: 135, actual: 136 },
+  { time: "Mai W3", target: 134, actual: 134 },
+  { time: "Mai W4", target: 135, actual: 135 },
+  { time: "01 Jun", target: 136, actual: 134 },
+];
+
+const supplyDistribution = [
+  { name: "RU II Dumai", pct: 40, value: "7.26 Jt BBL", secondary: "116 MBL", type: "Kilang", color: "#1e2d4d" },
+  { name: "RU IV Cilacap", pct: 30, value: "5.46 Jt BBL", secondary: "MBL", type: "Kilang", color: "#2563eb" },
+  { name: "Ekspor Asia", pct: 20, value: "2.61 Jt BBL", secondary: "5167 A.U.", type: "Ekspor", color: "#f59e0b" },
+  { name: "Terminal Dumai", pct: 10, value: "1.57 Jt BBL", secondary: "2.9x", type: "Terminal", color: "#8b5cf6" },
 ];
 
 type FilterType = "All" | "Active" | "Maintenance" | "Offshore" | "Onshore";
+type PeriodType = "Hari Ini" | "7H" | "30H" | "3B";
+type ChartView = "Keduanya" | "Target" | "Aktual";
 
 const colorMap: Record<string, string> = {
   blue: "bg-blue-50 text-blue-600",
@@ -179,11 +338,26 @@ const colorMap: Record<string, string> = {
   purple: "bg-purple-50 text-purple-600",
 };
 
+const tagColorMap: Record<string, string> = {
+  emerald: "bg-emerald-100 text-emerald-600",
+  amber: "bg-amber-100 text-amber-600",
+  slate: "bg-slate-100 text-slate-500",
+};
+
+const tagColorMapSelected: Record<string, string> = {
+  emerald: "bg-emerald-400/30 text-emerald-100",
+  amber: "bg-amber-400/30 text-amber-100",
+  slate: "bg-white/10 text-white/60",
+};
+
 export default function ProductionPage() {
   const [selectedBlock, setSelectedBlock] = useState(upstreamBlocks[0]);
   const [filter, setFilter] = useState<FilterType>("All");
+  const [period, setPeriod] = useState<PeriodType>("3B");
+  const [chartView, setChartView] = useState<ChartView>("Keduanya");
 
   const filters: FilterType[] = ["All", "Active", "Maintenance", "Offshore", "Onshore"];
+  const periods: PeriodType[] = ["Hari Ini", "7H", "30H", "3B"];
 
   const filteredBlocks = upstreamBlocks.filter((b) => {
     if (filter === "All") return true;
@@ -212,7 +386,7 @@ export default function ProductionPage() {
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
               Live Feed
             </span>
-            <span className="text-[11px] text-slate-400">May 3, 2026</span>
+            <span className="text-[11px] text-slate-400">May 2, 2025</span>
           </div>
         </div>
 
@@ -278,60 +452,152 @@ export default function ProductionPage() {
           </div>
 
           <div className="space-y-1.5">
-            {filteredBlocks.map((block) => (
-              <button
-                key={block.id}
-                onClick={() => setSelectedBlock(block)}
-                className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all duration-150 ${
-                  selectedBlock.id === block.id
-                    ? "bg-[#1e2d4d] text-white shadow-sm"
-                    : "bg-slate-50 hover:bg-slate-100"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${
-                    selectedBlock.id === block.id ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"
-                  }`}>
-                    {block.id}
+            {filteredBlocks.map((block) => {
+              const isSelected = selectedBlock.id === block.id;
+              return (
+                <button
+                  key={block.id}
+                  onClick={() => setSelectedBlock(block)}
+                  className={`w-full flex flex-col px-4 py-2.5 rounded-xl transition-all duration-150 text-left ${
+                    isSelected
+                      ? "bg-[#1e2d4d] text-white shadow-sm"
+                      : "bg-slate-50 hover:bg-slate-100"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 ${
+                        isSelected ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"
+                      }`}>
+                        {block.id}
+                      </div>
+                      <div>
+                        <p className={`text-[12px] font-semibold ${isSelected ? "text-white" : "text-slate-800"}`}>
+                          {block.name}
+                        </p>
+                        <p className={`text-[10px] ${isSelected ? "text-white/70" : "text-slate-400"}`}>
+                          {block.region}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[11px] font-bold ${isSelected ? "text-white" : "text-slate-700"}`}>
+                        {block.rate.toLocaleString()}
+                      </span>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                        block.type === "Offshore"
+                          ? isSelected ? "bg-blue-400/30 text-blue-100" : "bg-blue-100 text-blue-600"
+                          : isSelected ? "bg-white/20 text-white" : "bg-slate-200 text-slate-500"
+                      }`}>
+                        {block.type}
+                      </span>
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                        block.status === "Active"
+                          ? isSelected ? "bg-emerald-400/30 text-emerald-100" : "bg-emerald-100 text-emerald-600"
+                          : isSelected ? "bg-amber-400/30 text-amber-100" : "bg-amber-100 text-amber-600"
+                      }`}>
+                        {block.status}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <p className={`text-[12px] font-semibold ${selectedBlock.id === block.id ? "text-white" : "text-slate-800"}`}>
-                      {block.name}
-                    </p>
-                    <p className={`text-[10px] ${selectedBlock.id === block.id ? "text-white/70" : "text-slate-400"}`}>
-                      {block.region}
-                    </p>
+                  <div className="flex items-center gap-1.5 mt-1.5 ml-8 flex-wrap">
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                      isSelected ? "bg-white/10 text-white/60" : "bg-slate-200 text-slate-500"
+                    }`}>
+                      #{block.wells} sumur
+                    </span>
+                    {block.tags.map((tag, i) => (
+                      <span
+                        key={i}
+                        className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                          isSelected ? tagColorMapSelected[tag.color] : tagColorMap[tag.color]
+                        }`}
+                      >
+                        {tag.label}
+                      </span>
+                    ))}
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-[11px] font-bold ${selectedBlock.id === block.id ? "text-white" : "text-slate-700"}`}>
-                    {block.rate.toLocaleString()}
-                  </span>
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
-                    block.type === "Offshore"
-                      ? selectedBlock.id === block.id
-                        ? "bg-blue-400/30 text-blue-100"
-                        : "bg-blue-100 text-blue-600"
-                      : selectedBlock.id === block.id
-                        ? "bg-white/20 text-white"
-                        : "bg-slate-200 text-slate-500"
-                  }`}>
-                    {block.type}
-                  </span>
-                  <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
-                    block.status === "Active"
-                      ? selectedBlock.id === block.id
-                        ? "bg-emerald-400/30 text-emerald-100"
-                        : "bg-emerald-100 text-emerald-600"
-                      : selectedBlock.id === block.id
-                        ? "bg-amber-400/30 text-amber-100"
-                        : "bg-amber-100 text-amber-600"
-                  }`}>
-                    {block.status}
-                  </span>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Supply Report */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp size={14} className="text-[#1e2d4d]" />
+              <span className="text-sm font-semibold text-slate-800">Supply Report</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-2 py-0.5 rounded">
+                Flas Notice
+              </span>
+              <span className="text-[11px] text-slate-400">PTB and 4th, 2025</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+            <div className="lg:col-span-3 grid grid-cols-3 gap-3 border-r border-slate-100 pr-4">
+              <div>
+                <p className="text-[10px] text-slate-400 mb-1">Total Tersedia</p>
+                <p className="text-xl font-bold text-slate-800">
+                  350K <span className="text-xs font-medium text-slate-400">BBL</span>
+                </p>
+                <p className="text-[10px] text-slate-400 mt-1">0 Nomika Sipres</p>
+                <p className="text-[10px] text-slate-400">1 Jan 2025</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 mb-1">Total Dana &lt;TY&gt;</p>
+                <p className="text-xl font-bold text-emerald-600">
+                  18.20 Jt <span className="text-xs font-medium text-slate-400">BBL</span>
+                </p>
+                <p className="text-[10px] text-emerald-500 mt-1 flex items-center gap-0.5">
+                  <TrendingUp size={9} /> 2.4% vs target
+                </p>
+                <p className="text-[10px] text-slate-400">PT Nomika Sipres</p>
+                <p className="text-[10px] text-slate-400">1 Jan 2025</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-slate-400 mb-1">Pengiriman Berjalan</p>
+                <p className="text-xl font-bold text-[#1e2d4d]">
+                  380K <span className="text-xs font-medium text-slate-400">BBL</span>
+                </p>
+                <p className="text-[10px] text-slate-400 mt-1">PT Nomika 5</p>
+                <p className="text-[10px] text-slate-400">01/03/2025</p>
+              </div>
+            </div>
+            <div className="lg:col-span-2">
+              <p className="text-[10px] font-semibold text-slate-500 mb-2">Distribusi ke:</p>
+              <div className="space-y-2">
+                {supplyDistribution.map((item) => (
+                  <div key={item.name} className="flex items-center gap-2">
+                    <span
+                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <span className="text-[10px] text-slate-600 w-20 truncate">{item.name}</span>
+                    <div className="flex-1 h-1 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${item.pct}%`, backgroundColor: item.color }}
+                      />
+                    </div>
+                    <span className="text-[10px] font-bold text-slate-700 w-6 text-right">{item.pct}%</span>
+                    <span className="text-[10px] text-slate-500 w-16 text-right truncate">{item.value}</span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${
+                      item.type === "Kilang"
+                        ? "bg-blue-50 text-blue-600"
+                        : item.type === "Ekspor"
+                        ? "bg-amber-50 text-amber-600"
+                        : "bg-purple-50 text-purple-600"
+                    }`}>
+                      {item.type}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -354,47 +620,28 @@ export default function ProductionPage() {
                   {selectedBlock.status}
                 </span>
               </div>
-              <div className="relative h-44 bg-gradient-to-br from-slate-100 to-blue-50 flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 opacity-20">
-                  {[...Array(8)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute border border-slate-300"
-                      style={{
-                        left: `${(i % 4) * 25}%`,
-                        top: `${Math.floor(i / 4) * 50}%`,
-                        width: "25%",
-                        height: "50%",
-                      }}
-                    />
-                  ))}
-                </div>
-                <div className="relative flex flex-col items-center gap-1">
-                  <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
-                    <MapPin size={16} className="text-white" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-slate-700 bg-white/90 px-2 py-0.5 rounded-md shadow-sm">
-                    {selectedBlock.name}
-                  </span>
-                </div>
-                <div className="absolute bottom-3 left-3 flex gap-3">
-                  {[
-                    { label: "Wells", value: "48" },
-                    { label: "BOPD", value: selectedBlock.rate.toLocaleString() },
-                    { label: "MMSCFD", value: "4.2" },
-                  ].map((s) => (
-                    <div key={s.label} className="bg-white/90 rounded-lg px-2 py-1 text-center shadow-sm">
-                      <p className="text-[11px] font-bold text-slate-800">{s.value}</p>
-                      <p className="text-[9px] text-slate-400">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <LocationMap
+                locations={upstreamBlocks.map((b) => ({
+                  id: b.id,
+                  lat: b.lat,
+                  lng: b.lng,
+                  label: b.name,
+                  status: b.status,
+                }))}
+                selectedId={selectedBlock.id}
+                stats={[
+                  { label: "Wells", value: String(selectedBlock.wells) },
+                  { label: "PSI", value: "2,450" },
+                  { label: "BOPD", value: selectedBlock.rate.toLocaleString() },
+                  { label: "MMSCFD", value: "4.2" },
+                ]}
+                height="176px"
+              />
             </div>
 
             {/* Target vs Actual chart */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold text-slate-800">
                   Target vs Actual — {selectedBlock.name}
                 </span>
@@ -402,49 +649,86 @@ export default function ProductionPage() {
                   On Target
                 </span>
               </div>
-              <div className="relative h-32">
-                <svg className="w-full h-full" viewBox={`0 0 ${targetActualData.length * 60} 100`} preserveAspectRatio="none">
-                  <polyline
-                    fill="none"
-                    stroke="#cbd5e1"
-                    strokeWidth="1.5"
-                    strokeDasharray="4 3"
-                    points={targetActualData
-                      .map((d, i) => `${i * 60 + 30},${100 - (d.target / maxTarget) * 85}`)
-                      .join(" ")}
-                  />
-                  <polyline
-                    fill="none"
-                    stroke="#1e2d4d"
-                    strokeWidth="2"
-                    points={targetActualData
-                      .map((d, i) => `${i * 60 + 30},${100 - (d.actual / maxTarget) * 85}`)
-                      .join(" ")}
-                  />
-                  {targetActualData.map((d, i) => (
-                    <circle
-                      key={i}
-                      cx={i * 60 + 30}
-                      cy={100 - (d.actual / maxTarget) * 85}
-                      r="3"
-                      fill="#1e2d4d"
-                    />
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex gap-1">
+                  {periods.map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPeriod(p)}
+                      className={`text-[10px] px-2.5 py-1 rounded font-medium transition-colors ${
+                        period === p
+                          ? "bg-slate-700 text-white"
+                          : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                      }`}
+                    >
+                      {p}
+                    </button>
                   ))}
+                </div>
+                <div className="flex items-center gap-1">
+                  {(["Keduanya", "Target", "Aktual"] as ChartView[]).map((v) => (
+                    <button
+                      key={v}
+                      onClick={() => setChartView(v)}
+                      className={`text-[10px] px-2.5 py-1 rounded font-medium transition-colors ${
+                        chartView === v
+                          ? "bg-[#1e2d4d] text-white"
+                          : "text-slate-500 hover:bg-slate-100"
+                      }`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="relative h-32">
+                <svg className="w-full h-full" viewBox={`0 0 ${targetActualData.length * 50} 100`} preserveAspectRatio="none">
+                  {chartView !== "Aktual" && (
+                    <polyline
+                      fill="none"
+                      stroke="#cbd5e1"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 3"
+                      points={targetActualData
+                        .map((d, i) => `${i * 50 + 25},${100 - (d.target / maxTarget) * 85}`)
+                        .join(" ")}
+                    />
+                  )}
+                  {chartView !== "Target" && (
+                    <polyline
+                      fill="none"
+                      stroke="#1e2d4d"
+                      strokeWidth="2"
+                      points={targetActualData
+                        .map((d, i) => `${i * 50 + 25},${100 - (d.actual / maxTarget) * 85}`)
+                        .join(" ")}
+                    />
+                  )}
+                  {chartView !== "Target" &&
+                    targetActualData.map((d, i) => (
+                      <circle
+                        key={i}
+                        cx={i * 50 + 25}
+                        cy={100 - (d.actual / maxTarget) * 85}
+                        r="3"
+                        fill="#1e2d4d"
+                      />
+                    ))}
                 </svg>
                 <div className="absolute bottom-0 left-0 right-0 flex justify-between px-1">
                   {targetActualData.map((d) => (
-                    <span key={d.time} className="text-[9px] text-slate-400">{d.time}</span>
+                    <span key={d.time} className="text-[8px] text-slate-400">{d.time}</span>
                   ))}
                 </div>
               </div>
               <div className="flex gap-4 mt-2">
                 <span className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                  <span className="w-4 h-0.5 bg-slate-300 inline-block" style={{ borderTop: "2px dashed #cbd5e1" }} />
+                  <span className="w-4 h-0.5 inline-block border-t-2 border-dashed border-slate-300" />
                   Target
                 </span>
                 <span className="flex items-center gap-1.5 text-[10px] text-slate-500">
                   <span className="w-4 h-0.5 bg-[#1e2d4d] inline-block" />
-                  Actual
+                  Aktual
                 </span>
               </div>
             </div>
@@ -474,7 +758,10 @@ export default function ProductionPage() {
                     {wellPerformance.map((well) => (
                       <tr key={well.id} className="border-t border-slate-50 hover:bg-slate-50/50">
                         <td className="px-4 py-2.5 text-[11px] font-semibold text-slate-800">{well.id}</td>
-                        <td className="px-4 py-2.5 text-[11px] font-bold text-[#1e2d4d]">{well.rate.toFixed(2)}</td>
+                        <td className="px-4 py-2.5">
+                          <span className="text-[11px] font-bold text-[#1e2d4d]">{well.rate.toFixed(2)}</span>
+                          <span className="text-[9px] text-slate-400 ml-0.5">BOPD</span>
+                        </td>
                         <td className="px-4 py-2.5 text-[11px] text-slate-600">{well.pip.toLocaleString()}</td>
                         <td className="px-4 py-2.5 text-[11px] text-slate-600">{well.temp}</td>
                         <td className="px-4 py-2.5">
@@ -507,17 +794,26 @@ export default function ProductionPage() {
                 </div>
                 <span className="flex items-center gap-1 text-[10px] font-semibold text-red-500">
                   <Radio size={10} className="animate-pulse" />
-                  4 LIVE
+                  LIVE FEED
                 </span>
               </div>
               <div className="p-3 grid grid-cols-2 gap-2">
                 {cctvFeeds.map((feed) => (
                   <div key={feed.id} className="relative rounded-lg overflow-hidden bg-slate-800 h-24">
                     <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
-                      <div className="text-center">
-                        <Video size={20} className="text-slate-500 mx-auto mb-1" />
-                        <p className="text-[9px] text-slate-400 px-2 text-center leading-tight">{feed.label}</p>
-                      </div>
+                      {feed.signalLost ? (
+                        <div className="text-center">
+                          <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-1">
+                            <AlertTriangle size={14} className="text-red-400" />
+                          </div>
+                          <p className="text-[8px] text-red-400 font-semibold">SIGNAL LOST</p>
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <Video size={20} className="text-slate-500 mx-auto mb-1" />
+                          <p className="text-[9px] text-slate-400 px-2 text-center leading-tight">{feed.label}</p>
+                        </div>
+                      )}
                     </div>
                     {feed.live && (
                       <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
@@ -525,8 +821,11 @@ export default function ProductionPage() {
                         LIVE
                       </div>
                     )}
-                    <div className="absolute bottom-1 right-1.5 text-[8px] text-white/60">
-                      {feed.id.toString().padStart(2, "0")}
+                    <div className="absolute bottom-1 right-1.5 text-[8px] text-white/50">
+                      {feed.cam}
+                    </div>
+                    <div className="absolute bottom-1 left-2 text-[8px] text-white/40">
+                      11:52 WIB
                     </div>
                   </div>
                 ))}
@@ -535,15 +834,21 @@ export default function ProductionPage() {
 
             {/* Anomali Terdeteksi */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <AlertTriangle size={14} className="text-amber-500" />
-                <span className="text-sm font-semibold text-slate-800">Anomali Terdeteksi</span>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={14} className="text-amber-500" />
+                  <span className="text-sm font-semibold text-slate-800">Anomali Terdeteksi</span>
+                </div>
+                <span className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                  AI Active
+                </span>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {anomalies.map((a, i) => (
                   <div
                     key={i}
-                    className={`flex items-start gap-3 p-3 rounded-lg ${
+                    className={`rounded-xl overflow-hidden ${
                       a.type === "warning"
                         ? "bg-amber-50"
                         : a.type === "alert"
@@ -551,34 +856,71 @@ export default function ProductionPage() {
                         : "bg-blue-50"
                     }`}
                   >
-                    <div className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${
-                      a.type === "warning"
-                        ? "bg-amber-400"
-                        : a.type === "alert"
-                        ? "bg-red-400"
-                        : "bg-blue-400"
-                    }`} />
-                    <div>
-                      <p className={`text-[12px] font-semibold ${
+                    <div className="flex items-start gap-3 p-3">
+                      <div className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${
                         a.type === "warning"
-                          ? "text-amber-700"
+                          ? "bg-amber-400"
                           : a.type === "alert"
-                          ? "text-red-700"
-                          : "text-blue-700"
-                      }`}>
-                        {a.title}
-                      </p>
-                      <p className={`text-[10px] mt-0.5 ${
+                          ? "bg-red-400"
+                          : "bg-blue-400"
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[12px] font-semibold ${
+                          a.type === "warning"
+                            ? "text-amber-700"
+                            : a.type === "alert"
+                            ? "text-red-700"
+                            : "text-blue-700"
+                        }`}>
+                          {a.title}
+                        </p>
+                        <p className={`text-[10px] mt-0.5 ${
+                          a.type === "warning"
+                            ? "text-amber-600"
+                            : a.type === "alert"
+                            ? "text-red-600"
+                            : "text-blue-600"
+                        }`}>
+                          {a.detail}
+                        </p>
+                      </div>
+                      <ChevronRight size={14} className="text-slate-300 flex-shrink-0 mt-0.5" />
+                    </div>
+                    <div className={`mx-3 mb-3 rounded-lg p-2.5 ${
+                      a.type === "warning"
+                        ? "bg-amber-100/60"
+                        : a.type === "alert"
+                        ? "bg-red-100/60"
+                        : "bg-blue-100/60"
+                    }`}>
+                      <div className="flex items-center gap-1 mb-1">
+                        <Sparkles size={10} className={
+                          a.type === "warning"
+                            ? "text-amber-600"
+                            : a.type === "alert"
+                            ? "text-red-600"
+                            : "text-blue-600"
+                        } />
+                        <span className={`text-[9px] font-bold ${
+                          a.type === "warning"
+                            ? "text-amber-700"
+                            : a.type === "alert"
+                            ? "text-red-700"
+                            : "text-blue-700"
+                        }`}>
+                          AI Suggestion
+                        </span>
+                      </div>
+                      <p className={`text-[10px] leading-relaxed ${
                         a.type === "warning"
                           ? "text-amber-600"
                           : a.type === "alert"
                           ? "text-red-600"
                           : "text-blue-600"
                       }`}>
-                        {a.detail}
+                        {a.aiSuggestion}
                       </p>
                     </div>
-                    <ChevronRight size={14} className="ml-auto text-slate-300 flex-shrink-0 mt-0.5" />
                   </div>
                 ))}
               </div>

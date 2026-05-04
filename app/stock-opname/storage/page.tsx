@@ -1,32 +1,34 @@
 "use client";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import LocationMap from "@/components/dashboard/LocationMap";
 import { useState } from "react";
 import {
   Database,
   MapPin,
   Wrench,
-  Percent,
   LayoutGrid,
   Video,
   ArrowDown,
   ArrowUp,
   Radio,
   TrendingUp,
+  BarChart2,
+  AlertTriangle,
 } from "lucide-react";
 
 const statCards = [
   {
     label: "Total Kapasitas",
-    value: "233.1",
+    value: "23.1",
     unit: "Jt KL",
     icon: Database,
     color: "blue",
   },
   {
-    label: "Lokasi",
+    label: "Lokasi Aktif",
     value: "14",
-    sub: "1 Tk",
+    sub: "/ 15",
     icon: MapPin,
     color: "emerald",
   },
@@ -38,52 +40,60 @@ const statCards = [
     color: "amber",
   },
   {
-    label: "Vol. off Plafon",
+    label: "Avg. Utilisasi",
     value: "75%",
-    unit: "Terisi",
-    icon: Percent,
+    unit: "Total",
+    icon: BarChart2,
     color: "purple",
   },
   {
     label: "Terminal / Depot",
-    value: "12/3",
+    value: "12 / 3",
+    unit: "Unit",
     icon: LayoutGrid,
-    color: "slate",
+    color: "blue",
   },
 ];
 
 const terminals = [
-  { id: 1, name: "Terminal Plumpang", region: "Jakarta Utara", status: "Active", capacity: 6.0, util: 92 },
-  { id: 2, name: "Tg. Gerem", region: "Cilegon, Banten", status: "Active", capacity: 2.4, util: 78 },
-  { id: 3, name: "Terminal Pulau Sambu", region: "Kep. Riau", status: "Active", capacity: 2.5, util: 72 },
-  { id: 4, name: "Terminal Medan", region: "Belawan, Sumut", status: "Active", capacity: 1.8, util: 80 },
-  { id: 5, name: "Terminal Surabaya", region: "Surabaya, Jatim", status: "Active", capacity: 1.8, util: 86 },
-  { id: 6, name: "Terminal Makassar", region: "Makassar, Sulsel", status: "Active", capacity: 1.4, util: 76 },
-  { id: 7, name: "Terminal Balikpapan", region: "Balikpapan, Kaltim", status: "Maintenance", capacity: 1.2, util: 0 },
+  { id: 1, name: "Terminal Plumpang", region: "Jakarta Utara", status: "Active", type: "Terminal", capacity: 6.0, util: 55, lat: -6.115, lng: 106.882 },
+  { id: 2, name: "Terminal Tg. Gerem", region: "Cilegon, Banten", status: "Active", type: "Terminal", capacity: 2.4, util: 76, lat: -5.97, lng: 106.05 },
+  { id: 3, name: "Terminal Pulau Sambu", region: "Kep. Riau", status: "Active", type: "Terminal", capacity: 2.2, util: 72, lat: 1.05, lng: 103.9 },
+  { id: 4, name: "Terminal Medan", region: "Sumatera Utara", status: "Active", type: "Terminal", capacity: 1.8, util: 80, lat: 3.78, lng: 98.65 },
+  { id: 5, name: "Terminal Surabaya", region: "Jawa Timur", status: "Active", type: "Terminal", capacity: 1.8, util: 85, lat: -7.2, lng: 112.73 },
+  { id: 6, name: "Terminal Makassar", region: "Makassar, Sulsel", status: "Active", type: "Terminal", capacity: 1.4, util: 76, lat: -5.13, lng: 119.43 },
+  { id: 7, name: "Terminal Balikpapan", region: "Balikpapan, Kaltim", status: "Maintenance", type: "Terminal", capacity: 1.2, util: 0, lat: -1.27, lng: 116.83 },
+  { id: 8, name: "Terminal Ambon", region: "Maluku", status: "Active", type: "Terminal", capacity: 0.8, util: 68, lat: -3.69, lng: 128.18 },
+  { id: 9, name: "Terminal Pontianak", region: "Kalimantan Barat", status: "Active", type: "Terminal", capacity: 0.9, util: 71, lat: -0.03, lng: 109.33 },
+  { id: 10, name: "Terminal Panjang", region: "Lampung", status: "Active", type: "Terminal", capacity: 1.1, util: 74, lat: -5.47, lng: 105.30 },
+  { id: 11, name: "Depot Plumpang", region: "Jakarta Utara", status: "Active", type: "Depot", capacity: 0.9, util: 88, lat: -6.12, lng: 106.875 },
+  { id: 12, name: "Depot Cikampek", region: "Karawang, Jabar", status: "Active", type: "Depot", capacity: 0.7, util: 72, lat: -6.42, lng: 107.47 },
+  { id: 13, name: "Depot Bandung", region: "Bandung, Jabar", status: "Active", type: "Depot", capacity: 0.5, util: 65, lat: -6.92, lng: 107.6 },
+  { id: 14, name: "Depot Manado", region: "Sulawesi Utara", status: "Active", type: "Depot", capacity: 0.4, util: 58, lat: 1.49, lng: 124.84 },
+  { id: 15, name: "Depot Jayapura", region: "Papua", status: "Active", type: "Depot", capacity: 0.3, util: 61, lat: -2.53, lng: 140.71 },
 ];
 
 const cctvFeeds = [
-  { id: 1, label: "Tank Farm Area", live: true },
-  { id: 2, label: "Truck Loading Gate 1", live: true },
-  { id: 3, label: "Jetty Plumpang Area", live: true },
-  { id: 4, label: "Main Entrance Gate", live: true },
-  { id: 5, label: "Pump House Control", live: false },
-  { id: 6, label: "Safety Intersection Area", live: true },
+  { id: 1, label: "Tank Farm North", live: true, cam: "01" },
+  { id: 2, label: "Mops Loading Gate 1", live: true, cam: "02" },
+  { id: 3, label: "Jetty Plumpang View", live: true, cam: "03" },
+  { id: 4, label: "Main Entrance Gate", live: true, cam: "04" },
+  { id: 5, label: "Pump House Control", live: true, cam: "05" },
+  { id: 6, label: "Safety Inspection Gate", live: true, cam: "06" },
 ];
 
 const tankLevels = [
-  { id: "T-01", product: "Higrade", level: 90, capacity: 10000, status: "normal" },
-  { id: "T-02", product: "Pertamax", level: 90, capacity: 8500, status: "normal" },
-  { id: "T-03", product: "Pertalite", level: 83, capacity: 12000, status: "low" },
-  { id: "T-04", product: "Pertamina", level: 77, capacity: 9500, status: "low" },
-  { id: "T-05", product: "Solar", level: 95, capacity: 7200, status: "high" },
+  { id: "T-01", product: "MOGAS", level: 92, capacity: 11250, status: "normal" },
+  { id: "T-02", product: "Solar", level: 78, capacity: 8500, status: "normal" },
+  { id: "T-03", product: "Pertalite", level: 85, capacity: 14190, status: "normal" },
+  { id: "T-04", product: "Pertamax", level: 71, capacity: 3650, status: "low" },
 ];
 
 const rekonsiliasi = [
-  { label: "Refinery Inflow", value: 5010, change: 0, unit: "KL" },
-  { label: "Vessel Inflow", value: 6880, change: 20, unit: "KL" },
-  { label: "Terminal Transfer", value: 2960, change: -8, unit: "KL" },
-  { label: "Truck Loading Outflow", value: 10000, change: 22, unit: "KL" },
+  { label: "Refinery Inflow", before: 5009, after: 5010, change: 10, unit: "KL", alert: false },
+  { label: "Vessel Inflow", before: 7000, after: 6980, change: -20, unit: "KL", alert: false },
+  { label: "Terminal Transfer", before: 3003, after: 2995, change: -8, unit: "KL", alert: false },
+  { label: "Truck Loading Outflow", before: 12920, after: 12920, change: 20, unit: "KL", alert: true },
 ];
 
 const inflowOutflowData = [
@@ -117,8 +127,24 @@ const tankStatusLabel: Record<string, string> = {
   high: "text-red-600",
 };
 
+type FilterType = "All" | "Active" | "Maintenance" | "Terminal" | "Depot";
+type PeriodType = "Hari Ini" | "7H" | "30H" | "3B";
+type ChartView = "Keduanya" | "Inflow" | "Outflow";
+
 export default function StoragePage() {
   const [selectedTerminal, setSelectedTerminal] = useState(terminals[0]);
+  const [filter, setFilter] = useState<FilterType>("All");
+  const [period, setPeriod] = useState<PeriodType>("Hari Ini");
+  const [chartView, setChartView] = useState<ChartView>("Keduanya");
+
+  const filters: FilterType[] = ["All", "Active", "Maintenance", "Terminal", "Depot"];
+  const periods: PeriodType[] = ["Hari Ini", "7H", "30H", "3B"];
+
+  const filteredTerminals = terminals.filter((t) => {
+    if (filter === "All") return true;
+    if (filter === "Active" || filter === "Maintenance") return t.status === filter;
+    return t.type === filter;
+  });
 
   const maxInOut = Math.max(...inflowOutflowData.flatMap((d) => [d.inflow, d.outflow]));
 
@@ -133,7 +159,7 @@ export default function StoragePage() {
           <div>
             <h2 className="text-sm font-bold text-slate-800">Storage &amp; Distribution Dashboard</h2>
             <p className="text-[11px] text-slate-400 mt-0.5">
-              Monitoring storage &amp; terminal BBM seluruh Indonesia · 14:52 WIB
+              Monitoring depot &amp; terminal BBM seluruh Indonesia · 14:52 WIB
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -141,7 +167,7 @@ export default function StoragePage() {
               <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
               Live
             </span>
-            <span className="text-[11px] text-slate-400">May 3, 2026</span>
+            <span className="text-[11px] text-slate-400">May 7, 2026</span>
           </div>
         </div>
 
@@ -157,78 +183,124 @@ export default function StoragePage() {
               </div>
               <p className="text-lg font-bold text-slate-800 leading-tight">
                 {card.value}
-                {card.unit && (
+                {"sub" in card && card.sub && (
+                  <span className="text-sm font-medium text-slate-400 ml-0.5">{card.sub}</span>
+                )}
+                {"unit" in card && card.unit && (
                   <span className="text-[10px] font-medium text-slate-400 ml-1">{card.unit}</span>
                 )}
               </p>
               <p className="text-[10px] text-slate-400 leading-tight">{card.label}</p>
-              {"sub" in card && card.sub && (
-                <p className="text-[10px] text-slate-400">{card.sub}</p>
-              )}
             </div>
           ))}
         </div>
 
-        {/* Terminal picker — horizontal scroll */}
+        {/* Terminal / Depot picker — vertical list */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Database size={14} className="text-[#1e2d4d]" />
               <span className="text-sm font-semibold text-slate-800">Pilih Depot / Terminal</span>
             </div>
-            <span className="text-[11px] text-slate-400">{terminals.length} Lokasi</span>
+            <span className="text-[11px] text-slate-400">
+              {filteredTerminals.length}/{terminals.length} Lokasi
+            </span>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
-            {terminals.map((t) => (
+
+          <div className="relative mb-3">
+            <input
+              type="text"
+              placeholder="Cari nama depot/terminal atau wilayah..."
+              className="w-full text-[12px] border border-slate-200 rounded-lg px-3 py-2 pl-8 focus:outline-none focus:border-[#1e2d4d] text-slate-600"
+            />
+            <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+
+          <div className="flex gap-2 mb-3 flex-wrap">
+            {filters.map((f) => (
               <button
-                key={t.id}
-                onClick={() => setSelectedTerminal(t)}
-                className={`flex-shrink-0 flex flex-col gap-1 px-3 py-2.5 rounded-xl border transition-all duration-150 min-w-[120px] ${
-                  selectedTerminal.id === t.id
-                    ? "bg-[#1e2d4d] border-[#1e2d4d] shadow-sm"
-                    : "bg-slate-50 border-slate-200 hover:border-slate-300"
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`text-[11px] px-3 py-1 rounded-full font-medium transition-colors ${
+                  filter === f
+                    ? "bg-[#1e2d4d] text-white"
+                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
                 }`}
               >
-                <p className={`text-[11px] font-semibold whitespace-nowrap ${
-                  selectedTerminal.id === t.id ? "text-white" : "text-slate-700"
-                }`}>
-                  {t.name}
-                </p>
-                <p className={`text-[9px] whitespace-nowrap ${
-                  selectedTerminal.id === t.id ? "text-white/70" : "text-slate-400"
-                }`}>
-                  {t.region}
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  {t.util > 0 && (
-                    <div className={`flex-1 h-1 rounded-full overflow-hidden ${
-                      selectedTerminal.id === t.id ? "bg-white/20" : "bg-slate-200"
-                    }`}>
-                      <div
-                        className="h-full rounded-full bg-emerald-400"
-                        style={{ width: `${t.util}%` }}
-                      />
-                    </div>
-                  )}
-                  <span className={`text-[9px] font-semibold ${
-                    selectedTerminal.id === t.id ? "text-white" : "text-slate-500"
-                  }`}>
-                    {t.util > 0 ? `${t.util}%` : "Maintenance"}
-                  </span>
-                </div>
-                <span className={`text-[9px] font-medium self-start px-1.5 py-0.5 rounded-full ${
-                  t.status === "Active"
-                    ? selectedTerminal.id === t.id
-                      ? "bg-emerald-400/30 text-emerald-100"
-                      : "bg-emerald-100 text-emerald-600"
-                    : selectedTerminal.id === t.id
-                      ? "bg-amber-400/30 text-amber-100"
-                      : "bg-amber-100 text-amber-600"
-                }`}>
-                  {t.status}
-                </span>
+                {f}
               </button>
             ))}
+          </div>
+
+          <div className="space-y-1.5">
+            {filteredTerminals.map((t) => {
+              const isSelected = selectedTerminal.id === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => setSelectedTerminal(t)}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl transition-all duration-150 ${
+                    isSelected
+                      ? "bg-[#1e2d4d] text-white shadow-sm"
+                      : "bg-slate-50 hover:bg-slate-100"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                      isSelected ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"
+                    }`}>
+                      <Database size={12} />
+                    </div>
+                    <div className="text-left">
+                      <p className={`text-[12px] font-semibold ${isSelected ? "text-white" : "text-slate-800"}`}>
+                        {t.name}
+                      </p>
+                      <p className={`text-[10px] ${isSelected ? "text-white/70" : "text-slate-400"}`}>
+                        {t.region}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-[11px] font-bold ${isSelected ? "text-white" : "text-slate-700"}`}>
+                      {t.capacity.toFixed(1)}M
+                    </span>
+                    {t.util > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <div className={`w-14 h-1.5 rounded-full overflow-hidden ${
+                          isSelected ? "bg-white/20" : "bg-slate-200"
+                        }`}>
+                          <div
+                            className={`h-full rounded-full ${
+                              t.util >= 85 ? "bg-red-400" : t.util >= 70 ? "bg-emerald-400" : "bg-amber-400"
+                            }`}
+                            style={{ width: `${t.util}%` }}
+                          />
+                        </div>
+                        <span className={`text-[10px] font-semibold ${isSelected ? "text-white" : "text-slate-600"}`}>
+                          {t.util}%
+                        </span>
+                      </div>
+                    )}
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                      t.type === "Terminal"
+                        ? isSelected ? "bg-blue-400/30 text-blue-100" : "bg-blue-100 text-blue-600"
+                        : isSelected ? "bg-violet-400/30 text-violet-100" : "bg-violet-100 text-violet-600"
+                    }`}>
+                      {t.type}
+                    </span>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                      t.status === "Active"
+                        ? isSelected ? "bg-emerald-400/30 text-emerald-100" : "bg-emerald-100 text-emerald-600"
+                        : isSelected ? "bg-amber-400/30 text-amber-100" : "bg-amber-100 text-amber-600"
+                    }`}>
+                      {t.status}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -251,89 +323,109 @@ export default function StoragePage() {
                   {selectedTerminal.status}
                 </span>
               </div>
-              <div className="relative h-44 bg-gradient-to-br from-slate-100 to-blue-50 flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 opacity-20">
-                  {[...Array(8)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute border border-slate-300"
-                      style={{
-                        left: `${(i % 4) * 25}%`,
-                        top: `${Math.floor(i / 4) * 50}%`,
-                        width: "25%",
-                        height: "50%",
-                      }}
-                    />
-                  ))}
-                </div>
-                <div className="relative flex flex-col items-center gap-1">
-                  <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
-                    <MapPin size={16} className="text-white" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-slate-700 bg-white/90 px-2 py-0.5 rounded-md shadow-sm">
-                    {selectedTerminal.name}
-                  </span>
-                </div>
-                <div className="absolute bottom-3 left-3 flex gap-2">
-                  {[
-                    { label: "Terisi", value: `${selectedTerminal.util}%` },
-                    { label: "Inflow", value: "1,250 KL/h" },
-                    { label: "Outflow", value: "1.60 KL/h" },
-                    { label: "Est. Full", value: "7 jam" },
-                  ].map((s) => (
-                    <div key={s.label} className="bg-white/90 rounded-lg px-2 py-1 text-center shadow-sm">
-                      <p className="text-[11px] font-bold text-slate-800">{s.value}</p>
-                      <p className="text-[9px] text-slate-400">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <LocationMap
+                locations={terminals.map((t) => ({
+                  id: t.id,
+                  lat: t.lat,
+                  lng: t.lng,
+                  label: t.name,
+                  status: t.status,
+                }))}
+                selectedId={selectedTerminal.id}
+                stats={[
+                  { label: "Terisi", value: `${selectedTerminal.util}%` },
+                  { label: "Inflow", value: "1,250 KL/h" },
+                  { label: "Outflow", value: "1,160 KL/h" },
+                  { label: "7 jenis", value: "Produk" },
+                ]}
+                height="176px"
+              />
             </div>
 
             {/* Inflow vs Outflow chart */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <TrendingUp size={13} className="text-[#1e2d4d]" />
                   <span className="text-sm font-semibold text-slate-800">
                     Inflow vs Outflow — {selectedTerminal.name}
                   </span>
                 </div>
+                <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">
+                  + Surplus
+                </span>
+              </div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex gap-1">
+                  {periods.map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPeriod(p)}
+                      className={`text-[10px] px-2.5 py-1 rounded font-medium transition-colors ${
+                        period === p
+                          ? "bg-slate-700 text-white"
+                          : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1">
+                  {(["Keduanya", "Inflow", "Outflow"] as ChartView[]).map((v) => (
+                    <button
+                      key={v}
+                      onClick={() => setChartView(v)}
+                      className={`text-[10px] px-2.5 py-1 rounded font-medium transition-colors ${
+                        chartView === v
+                          ? "bg-[#1e2d4d] text-white"
+                          : "text-slate-500 hover:bg-slate-100"
+                      }`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="relative h-36">
                 <svg className="w-full h-full" viewBox={`0 0 ${inflowOutflowData.length * 60} 100`} preserveAspectRatio="none">
-                  {/* Inflow area */}
                   <defs>
                     <linearGradient id="inflowGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#1e2d4d" stopOpacity="0.3" />
-                      <stop offset="100%" stopColor="#1e2d4d" stopOpacity="0.05" />
+                      <stop offset="0%" stopColor="#059669" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#059669" stopOpacity="0.02" />
                     </linearGradient>
                   </defs>
-                  <polygon
-                    fill="url(#inflowGrad)"
-                    points={[
-                      `${0 * 60 + 30},100`,
-                      ...inflowOutflowData.map((d, i) => `${i * 60 + 30},${100 - (d.inflow / maxInOut) * 85}`),
-                      `${(inflowOutflowData.length - 1) * 60 + 30},100`,
-                    ].join(" ")}
-                  />
-                  <polyline
-                    fill="none"
-                    stroke="#1e2d4d"
-                    strokeWidth="2"
-                    points={inflowOutflowData
-                      .map((d, i) => `${i * 60 + 30},${100 - (d.inflow / maxInOut) * 85}`)
-                      .join(" ")}
-                  />
-                  <polyline
-                    fill="none"
-                    stroke="#059669"
-                    strokeWidth="1.5"
-                    strokeDasharray="4 3"
-                    points={inflowOutflowData
-                      .map((d, i) => `${i * 60 + 30},${100 - (d.outflow / maxInOut) * 85}`)
-                      .join(" ")}
-                  />
+                  {chartView !== "Outflow" && (
+                    <>
+                      <polygon
+                        fill="url(#inflowGrad)"
+                        points={[
+                          `${0 * 60 + 30},100`,
+                          ...inflowOutflowData.map((d, i) => `${i * 60 + 30},${100 - (d.inflow / maxInOut) * 85}`),
+                          `${(inflowOutflowData.length - 1) * 60 + 30},100`,
+                        ].join(" ")}
+                      />
+                      <polyline
+                        fill="none"
+                        stroke="#059669"
+                        strokeWidth="2"
+                        points={inflowOutflowData
+                          .map((d, i) => `${i * 60 + 30},${100 - (d.inflow / maxInOut) * 85}`)
+                          .join(" ")}
+                      />
+                    </>
+                  )}
+                  {chartView !== "Inflow" && (
+                    <polyline
+                      fill="none"
+                      stroke="#1e2d4d"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 3"
+                      points={inflowOutflowData
+                        .map((d, i) => `${i * 60 + 30},${100 - (d.outflow / maxInOut) * 85}`)
+                        .join(" ")}
+                    />
+                  )}
                 </svg>
                 <div className="absolute bottom-0 left-0 right-0 flex justify-between px-1">
                   {inflowOutflowData.map((d) => (
@@ -341,15 +433,18 @@ export default function StoragePage() {
                   ))}
                 </div>
               </div>
-              <div className="flex gap-4 mt-2">
-                <span className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                  <span className="w-3 h-0.5 bg-[#1e2d4d] inline-block" />
-                  Inflow
-                </span>
-                <span className="flex items-center gap-1.5 text-[10px] text-slate-500">
-                  <span className="w-3 h-0.5 bg-emerald-600 inline-block" />
-                  Outflow
-                </span>
+              <div className="flex items-center justify-between mt-2">
+                <div className="flex gap-4">
+                  <span className="flex items-center gap-1.5 text-[10px] text-slate-600">
+                    <span className="w-3 h-0.5 bg-emerald-600 inline-block" />
+                    Inflow 1,229 KL/h
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                    <span className="w-3 h-0.5 inline-block border-t-2 border-dashed border-slate-400" />
+                    Outflow 1,164 KL/h
+                  </span>
+                </div>
+                <span className="text-[10px] text-emerald-600 font-semibold">+85 KL/h net</span>
               </div>
             </div>
 
@@ -386,7 +481,7 @@ export default function StoragePage() {
                       />
                     </div>
                     <span className="text-[11px] font-bold text-slate-700 w-8 text-right">{tank.level}%</span>
-                    <span className="text-[9px] text-slate-400 w-16 text-right">
+                    <span className="text-[9px] text-slate-400 w-20 text-right">
                       {((tank.capacity * tank.level) / 100).toLocaleString()} KL
                     </span>
                   </div>
@@ -405,6 +500,7 @@ export default function StoragePage() {
                   <span className="text-sm font-semibold text-slate-800">
                     Live CCTV — {selectedTerminal.name}
                   </span>
+                  <span className="text-[10px] text-slate-400">6 unit · 0 offline</span>
                 </div>
                 <span className="flex items-center gap-1 text-[10px] font-semibold text-red-500">
                   <Radio size={10} className="animate-pulse" />
@@ -426,8 +522,11 @@ export default function StoragePage() {
                         LIVE
                       </div>
                     )}
-                    <div className="absolute bottom-1 right-1.5 text-[8px] text-white/60">
-                      {feed.id.toString().padStart(2, "0")}
+                    <div className="absolute bottom-1 right-1.5 text-[8px] text-white/50">
+                      {feed.cam}
+                    </div>
+                    <div className="absolute bottom-1 left-2 text-[8px] text-white/40">
+                      14:52 WIB
                     </div>
                   </div>
                 ))}
@@ -442,19 +541,32 @@ export default function StoragePage() {
                   Rekonsiliasi — {selectedTerminal.name}
                 </span>
               </div>
+              <div className="mb-2 flex items-center justify-between px-3">
+                <span className="text-[10px] text-slate-400 w-40">Komponen</span>
+                <div className="flex items-center gap-4">
+                  <span className="text-[10px] text-slate-400 text-right w-16">Sebelumnya</span>
+                  <span className="text-[10px] text-slate-400 text-right w-16">Sekarang</span>
+                  <span className="text-[10px] text-slate-400 text-right w-10">Delta</span>
+                </div>
+              </div>
               <div className="space-y-1.5">
                 {rekonsiliasi.map((item) => (
                   <div
                     key={item.label}
                     className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
                   >
-                    <span className="text-[12px] text-slate-600">{item.label}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="text-[12px] font-bold text-slate-800">
-                        {item.value.toLocaleString()} {item.unit}
+                    <span className="text-[11px] text-slate-600 w-40 truncate">{item.label}</span>
+                    <div className="flex items-center gap-4">
+                      <span className="text-[11px] text-slate-400 w-16 text-right">
+                        {item.before.toLocaleString()}
                       </span>
-                      <span className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                        item.change > 0
+                      <span className="text-[11px] font-bold text-slate-800 w-16 text-right">
+                        {item.after.toLocaleString()}
+                      </span>
+                      <span className={`flex items-center justify-end gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded w-10 ${
+                        item.alert
+                          ? "text-amber-600 bg-amber-50"
+                          : item.change > 0
                           ? "text-emerald-600 bg-emerald-50"
                           : item.change < 0
                           ? "text-red-600 bg-red-50"
@@ -464,6 +576,8 @@ export default function StoragePage() {
                           <ArrowUp size={9} />
                         ) : item.change < 0 ? (
                           <ArrowDown size={9} />
+                        ) : item.alert ? (
+                          <AlertTriangle size={9} />
                         ) : null}
                         {item.change === 0 ? "0" : Math.abs(item.change)}
                       </span>

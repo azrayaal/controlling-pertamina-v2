@@ -37,12 +37,18 @@ const navItems: NavItem[] = [
       { label: "Production", icon: "/poduction.png", href: "/stock-opname/production" },
       { label: "Refinery", icon: "/refinery.png", href: "/stock-opname/refinery" },
       { label: "Storage", icon: "/storage.png", href: "/stock-opname/storage" },
+      { label: "Logistics", icon: "/logistic.png", href: "/stock-opname/logistics" },
     ],
   },
   {
     label: "Controlling Cabang",
     icon: "/controlling_cabang.png",
     href: "/controlling-cabang",
+    subItems: [
+      { label: "SPBU", icon: "/spbu.png", href: "/controlling-cabang/spbu" },
+      { label: "SPKLU", icon: "/spklu.png", href: "/controlling-cabang/spklu" },
+      { label: "SPBE", icon: "/spbe.png", href: "/controlling-cabang/spbe" },
+    ],
   },
   {
     label: "Controlling Distribusi",

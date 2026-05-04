@@ -1,6 +1,7 @@
 "use client";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import LocationMap from "@/components/dashboard/LocationMap";
 import { useState } from "react";
 import {
   Factory,
@@ -12,29 +13,31 @@ import {
   CheckCircle2,
   Radio,
   ChevronRight,
+  Sparkles,
+  HardHat,
 } from "lucide-react";
 
 const statCards = [
   {
-    label: "Production Output",
+    label: "Total Throughput",
     value: "1.05M",
     unit: "BPD",
     icon: Factory,
     color: "blue",
   },
   {
-    label: "Units Running",
-    value: "6",
-    unit: "",
+    label: "Kilang Running",
+    value: "7",
+    sub: "/ 10",
     icon: Activity,
     color: "emerald",
   },
   {
-    label: "Capacity Utilization",
+    label: "Rata-rata Utilisasi",
     value: "88%",
     unit: "Operational",
     icon: Gauge,
-    color: "purple",
+    color: "blue",
   },
   {
     label: "Maintenance",
@@ -44,47 +47,55 @@ const statCards = [
     color: "amber",
   },
   {
-    label: "Sub-terminal",
+    label: "Konstruksi",
     value: "1",
     unit: "RDMP",
-    icon: MapPin,
-    color: "slate",
+    icon: HardHat,
+    color: "purple",
   },
 ];
 
 const refineries = [
-  { id: 1, name: "RU II Dumai", region: "Dumai, Riau", cap: 170000, util: 84, status: "Running" },
-  { id: 2, name: "RU III Plaju", region: "Palembang, Sumsel", cap: 133700, util: 81, status: "Running" },
-  { id: 3, name: "RU IV Cilacap", region: "Cilacap, Jawa Tengah", cap: 348000, util: 88, status: "Running" },
-  { id: 4, name: "RU V Balikpapan", region: "Balikpapan, Kaltim", cap: 380000, util: 80, status: "Maintenance" },
-  { id: 5, name: "RU VI Balongan", region: "Indramayu, Jawa Barat", cap: 125000, util: 0, status: "Maintenance" },
+  { id: 1, name: "RU II Dumai", region: "Dumai, Riau", cap: 170000, util: 84, status: "Running", lat: 1.67, lng: 101.43 },
+  { id: 2, name: "RU III Plaju", region: "Palembang, Sumsel", cap: 133700, util: 91, status: "Running", lat: -2.97, lng: 104.76 },
+  { id: 3, name: "RU IV Cilacap", region: "Cilacap, Jawa Tengah", cap: 348000, util: 96, status: "Running", lat: -7.73, lng: 109.00 },
+  { id: 4, name: "RU V Balikpapan", region: "Balikpapan, Kaltim", cap: 260000, util: 85, status: "Running", lat: -1.27, lng: 116.83 },
+  { id: 5, name: "RU VI Balongan", region: "Indramayu, Jawa Barat", cap: 125000, util: 0, status: "Maintenance", lat: -6.46, lng: 108.34 },
+  { id: 6, name: "RU VII Kasim", region: "Sorong, Papua Barat", cap: 10000, util: 78, status: "Running", lat: -0.88, lng: 131.25 },
+  { id: 7, name: "TPPI Tuban", region: "Tuban, Jawa Timur", cap: 100000, util: 72, status: "Running", lat: -6.9, lng: 112.05 },
+  { id: 8, name: "GRR Tuban", region: "Tuban, Jawa Timur", cap: 300000, util: 0, status: "Construction", lat: -6.88, lng: 112.07 },
+  { id: 9, name: "Kilang Plaju Ext", region: "Palembang, Sumsel", cap: 80000, util: 0, status: "Construction", lat: -3.0, lng: 104.78 },
+  { id: 10, name: "Kilang Bontang", region: "Bontang, Kaltim", cap: 120000, util: 82, status: "Running", lat: 0.12, lng: 117.48 },
 ];
 
 const processUnits = [
   { name: "CDU", efficiency: 97, color: "#1e2d4d" },
   { name: "FCCU", efficiency: 94, color: "#2563eb" },
-  { name: "Hydrocracker", efficiency: 80, color: "#0891b2" },
-  { name: "Utilities", efficiency: 105, color: "#059669" },
+  { name: "Hydrocracker", efficiency: 92, color: "#0891b2" },
+  { name: "Bending", efficiency: 96, color: "#059669" },
+  { name: "Utilities", efficiency: 109, color: "#7c3aed" },
 ];
 
 const outputProducts = [
-  { name: "Gasoline", value: 145000, color: "#1e2d4d" },
-  { name: "Diesel", value: 89000, color: "#2563eb" },
-  { name: "Avtur", value: 42000, color: "#06b6d4" },
-  { name: "LNG", value: 18000, color: "#f59e0b" },
-  { name: "Gasoil", value: 54000, color: "#8b5cf6" },
+  { name: "Minyak", value: 248000, color: "#1e2d4d" },
+  { name: "Solar", value: 148000, color: "#1e2d4d" },
+  { name: "Avtur", value: 52000, color: "#0891b2" },
+  { name: "LPG", value: 38000, color: "#f59e0b" },
+  { name: "Residue", value: 62000, color: "#8b5cf6" },
 ];
 
 const cctvFeeds = [
-  { id: 1, label: "RU Cilacap CDU-I Enh", live: true },
-  { id: 2, label: "Fuel-in-line Inst", live: true },
-  { id: 3, label: "Control Room Imp", live: true },
-  { id: 4, label: "Port Access Indo", live: true },
-  { id: 5, label: "Ship Loading Bow", live: true },
-  { id: 6, label: "Pre-Utility Storage Tank", live: false },
+  { id: 1, label: "Cilacap CCU-1 Cam", live: true, cam: "01" },
+  { id: 2, label: "Hydrocracker Unit", live: true, cam: "02" },
+  { id: 3, label: "Control Room Ops", live: true, cam: "03" },
+  { id: 4, label: "Port Access Gate", live: true, cam: "04" },
+  { id: 5, label: "Ship Loading Arm", live: true, cam: "05" },
+  { id: 6, label: "Portable Storage Tank", live: true, cam: "06" },
 ];
 
 type FilterType = "All" | "Running" | "Maintenance" | "Construction";
+type PeriodType = "Hari Ini" | "7H" | "30H" | "3B";
+type ChartView = "Keduanya" | "Aktual" | "Target";
 
 const colorMap: Record<string, string> = {
   blue: "bg-blue-50 text-blue-600",
@@ -97,8 +108,11 @@ const colorMap: Record<string, string> = {
 export default function RefineryPage() {
   const [selectedRefinery, setSelectedRefinery] = useState(refineries[2]);
   const [filter, setFilter] = useState<FilterType>("All");
+  const [period, setPeriod] = useState<PeriodType>("Hari Ini");
+  const [chartView, setChartView] = useState<ChartView>("Keduanya");
 
   const filters: FilterType[] = ["All", "Running", "Maintenance", "Construction"];
+  const periods: PeriodType[] = ["Hari Ini", "7H", "30H", "3B"];
 
   const filteredRefineries = refineries.filter((r) => {
     if (filter === "All") return true;
@@ -142,7 +156,10 @@ export default function RefineryPage() {
               </div>
               <p className="text-lg font-bold text-slate-800 leading-tight">
                 {card.value}
-                {card.unit && (
+                {"sub" in card && card.sub && (
+                  <span className="text-sm font-medium text-slate-400 ml-0.5">{card.sub}</span>
+                )}
+                {"unit" in card && card.unit && (
                   <span className="text-[10px] font-medium text-slate-400 ml-1">{card.unit}</span>
                 )}
               </p>
@@ -159,7 +176,7 @@ export default function RefineryPage() {
               <span className="text-sm font-semibold text-slate-800">Pilih Kilang</span>
             </div>
             <span className="text-[11px] text-slate-400">
-              {refineries.filter((r) => r.status === "Running").length}/{refineries.length} Kilang
+              {filter === "All" ? refineries.length : filteredRefineries.length}/{refineries.length} Kilang
             </span>
           </div>
 
@@ -202,10 +219,10 @@ export default function RefineryPage() {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[9px] font-bold flex-shrink-0 ${
                     selectedRefinery.id === ref.id ? "bg-white/20 text-white" : "bg-slate-200 text-slate-600"
                   }`}>
-                    {ref.id}
+                    <Factory size={13} />
                   </div>
                   <div className="text-left">
                     <p className={`text-[12px] font-semibold ${selectedRefinery.id === ref.id ? "text-white" : "text-slate-800"}`}>
@@ -222,10 +239,16 @@ export default function RefineryPage() {
                   </span>
                   {ref.util > 0 && (
                     <div className="flex items-center gap-1.5">
-                      <div className="w-16 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                      <div className={`w-16 h-1.5 rounded-full overflow-hidden ${
+                        selectedRefinery.id === ref.id ? "bg-white/20" : "bg-slate-200"
+                      }`}>
                         <div
                           className={`h-full rounded-full ${
-                            ref.util >= 85 ? "bg-emerald-400" : ref.util >= 70 ? "bg-amber-400" : "bg-red-400"
+                            ref.status === "Maintenance"
+                              ? "bg-amber-400"
+                              : ref.util >= 90
+                              ? "bg-emerald-400"
+                              : "bg-blue-400"
                           }`}
                           style={{ width: `${ref.util}%` }}
                         />
@@ -240,9 +263,13 @@ export default function RefineryPage() {
                       ? selectedRefinery.id === ref.id
                         ? "bg-emerald-400/30 text-emerald-100"
                         : "bg-emerald-100 text-emerald-600"
-                      : selectedRefinery.id === ref.id
-                        ? "bg-amber-400/30 text-amber-100"
-                        : "bg-amber-100 text-amber-600"
+                      : ref.status === "Construction"
+                        ? selectedRefinery.id === ref.id
+                          ? "bg-blue-400/30 text-blue-100"
+                          : "bg-blue-100 text-blue-600"
+                        : selectedRefinery.id === ref.id
+                          ? "bg-amber-400/30 text-amber-100"
+                          : "bg-amber-100 text-amber-600"
                   }`}>
                     {ref.status}
                   </span>
@@ -271,43 +298,23 @@ export default function RefineryPage() {
                   {selectedRefinery.status}
                 </span>
               </div>
-              <div className="relative h-44 bg-gradient-to-br from-slate-100 to-blue-50 flex items-center justify-center overflow-hidden">
-                <div className="absolute inset-0 opacity-20">
-                  {[...Array(8)].map((_, i) => (
-                    <div
-                      key={i}
-                      className="absolute border border-slate-300"
-                      style={{
-                        left: `${(i % 4) * 25}%`,
-                        top: `${Math.floor(i / 4) * 50}%`,
-                        width: "25%",
-                        height: "50%",
-                      }}
-                    />
-                  ))}
-                </div>
-                <div className="relative flex flex-col items-center gap-1">
-                  <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg">
-                    <MapPin size={16} className="text-white" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-slate-700 bg-white/90 px-2 py-0.5 rounded-md shadow-sm">
-                    {selectedRefinery.name}
-                  </span>
-                </div>
-                <div className="absolute bottom-3 left-3 flex gap-2">
-                  {[
-                    { label: "Kapasitas", value: `${(selectedRefinery.cap / 1000).toFixed(0)}K BPD` },
-                    { label: "Utilisasi", value: `${selectedRefinery.util}%` },
-                    { label: "CDU/U", value: "97%" },
-                    { label: "RDMP", value: "94%" },
-                  ].map((s) => (
-                    <div key={s.label} className="bg-white/90 rounded-lg px-2 py-1 text-center shadow-sm">
-                      <p className="text-[11px] font-bold text-slate-800">{s.value}</p>
-                      <p className="text-[9px] text-slate-400">{s.label}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <LocationMap
+                locations={refineries.map((r) => ({
+                  id: r.id,
+                  lat: r.lat,
+                  lng: r.lng,
+                  label: r.name,
+                  status: r.status,
+                }))}
+                selectedId={selectedRefinery.id}
+                stats={[
+                  { label: "Kapasitas", value: `${(selectedRefinery.cap / 1000).toFixed(0)}K BPD` },
+                  { label: "Utilisasi", value: `${selectedRefinery.util}%` },
+                  { label: "CDU/U", value: "97%" },
+                  { label: "RDMP", value: "94%" },
+                ]}
+                height="176px"
+              />
             </div>
 
             {/* Process Unit Efficiency */}
@@ -340,10 +347,45 @@ export default function RefineryPage() {
 
             {/* Output Products bar chart */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-semibold text-slate-800">
                   Output Produk — {selectedRefinery.name}
                 </span>
+                <span className="text-[10px] text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">
+                  On Target
+                </span>
+              </div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex gap-1">
+                  {periods.map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => setPeriod(p)}
+                      className={`text-[10px] px-2.5 py-1 rounded font-medium transition-colors ${
+                        period === p
+                          ? "bg-slate-700 text-white"
+                          : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1">
+                  {(["Keduanya", "Aktual", "Target"] as ChartView[]).map((v) => (
+                    <button
+                      key={v}
+                      onClick={() => setChartView(v)}
+                      className={`text-[10px] px-2.5 py-1 rounded font-medium transition-colors ${
+                        chartView === v
+                          ? "bg-[#1e2d4d] text-white"
+                          : "text-slate-500 hover:bg-slate-100"
+                      }`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="flex items-end gap-3 h-28">
                 {outputProducts.map((product) => {
@@ -368,6 +410,19 @@ export default function RefineryPage() {
                     </div>
                   );
                 })}
+              </div>
+              <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100">
+                <div className="flex gap-3">
+                  <span className="flex items-center gap-1.5 text-[10px] text-slate-600">
+                    <span className="w-2 h-2 bg-slate-800 rounded-sm inline-block" />
+                    Aktual: 248,000 SPD
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                    <span className="w-2 h-2 bg-slate-300 rounded-sm inline-block" />
+                    Target: 343,287 BPD
+                  </span>
+                </div>
+                <span className="text-[10px] text-emerald-600 font-semibold">+4,733 vs target</span>
               </div>
             </div>
           </div>
@@ -403,8 +458,11 @@ export default function RefineryPage() {
                         LIVE
                       </div>
                     )}
-                    <div className="absolute bottom-1 right-1.5 text-[8px] text-white/60">
-                      {feed.id.toString().padStart(2, "0")}
+                    <div className="absolute bottom-1 right-1.5 text-[8px] text-white/50">
+                      {feed.cam}
+                    </div>
+                    <div className="absolute bottom-1 left-2 text-[8px] text-white/40">
+                      14:52 WIB
                     </div>
                   </div>
                 ))}
@@ -413,21 +471,39 @@ export default function RefineryPage() {
 
             {/* Status & Alert */}
             <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <CheckCircle2 size={14} className="text-emerald-500" />
-                <span className="text-sm font-semibold text-slate-800">
-                  Status &amp; Alert — {selectedRefinery.name}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={14} className="text-emerald-500" />
+                  <span className="text-sm font-semibold text-slate-800">
+                    Status &amp; Alert — {selectedRefinery.name}
+                  </span>
+                </div>
+                <span className="flex items-center gap-1 text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
+                  AI Active
                 </span>
               </div>
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-emerald-50">
-                <div className="mt-0.5 w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-                <div>
-                  <p className="text-[12px] font-semibold text-emerald-700">All Systems Normal</p>
-                  <p className="text-[10px] text-emerald-600 mt-0.5">
-                    Operating at {selectedRefinery.util}% efficiency
+              <div className="rounded-xl overflow-hidden bg-emerald-50">
+                <div className="flex items-start gap-3 p-3">
+                  <div className="mt-0.5 w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-[12px] font-semibold text-emerald-700">AI Systems Normal</p>
+                    <p className="text-[10px] text-emerald-600 mt-0.5">
+                      Operating at high efficiency
+                    </p>
+                  </div>
+                  <ChevronRight size={14} className="text-slate-300 flex-shrink-0 mt-0.5" />
+                </div>
+                <div className="mx-3 mb-3 rounded-lg p-2.5 bg-emerald-100/60">
+                  <div className="flex items-center gap-1 mb-1">
+                    <Sparkles size={10} className="text-emerald-600" />
+                    <span className="text-[9px] font-bold text-emerald-700">AI Suggestion</span>
+                  </div>
+                  <p className="text-[10px] text-emerald-600 leading-relaxed">
+                    Pertahankan kondisi operasi optimal. Manfaatkan window efisiensi tinggi ini
+                    untuk mempercepat batch blending produk premium.
                   </p>
                 </div>
-                <ChevronRight size={14} className="ml-auto text-slate-300 flex-shrink-0 mt-0.5" />
               </div>
               <div className="mt-3 space-y-2">
                 {[
