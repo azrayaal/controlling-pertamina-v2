@@ -1,189 +1,461 @@
 "use client";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { cctvCameras } from "@/lib/mockData";
-import { Camera, WifiOff, AlertTriangle, Maximize2 } from "lucide-react";
-import { useState } from "react";
+import { cctvLocations } from "@/lib/mockData";
+import type { CctvCategory, CctvRegion, CctvLocation } from "@/lib/mockData";
+import { Camera, Search, RefreshCw, X, WifiOff, AlertTriangle } from "lucide-react";
+import Image from "next/image";
+import dynamic from "next/dynamic";
+import { useState, useMemo } from "react";
 
-const typeColors: Record<string, string> = {
-  Nozzle: "bg-blue-50 text-blue-600",
-  Gate: "bg-purple-50 text-purple-600",
-  Vessel: "bg-cyan-50 text-cyan-600",
-  Truck: "bg-amber-50 text-amber-700",
-  Driver: "bg-orange-50 text-orange-600",
-  Plant: "bg-red-50 text-red-600",
-  Pipeline: "bg-emerald-50 text-emerald-700",
-  Depot: "bg-slate-100 text-slate-600",
-  SPLU: "bg-violet-50 text-violet-600",
-  Upstream: "bg-teal-50 text-teal-600",
-  Control: "bg-indigo-50 text-indigo-600",
+const CctvMap = dynamic(() => import("@/components/dashboard/CctvMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full bg-slate-100 animate-pulse flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <span className="text-slate-400 text-sm font-medium">Loading Map…</span>
+      </div>
+    </div>
+  ),
+});
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+const CATEGORIES: { key: string; label: string; icon: string; pinpoint: string; color: string }[] = [
+  { key: "Semua",    label: "Semua",    icon: "",                       pinpoint: "",                          color: "#64748b" },
+  { key: "SPBU",     label: "SPBU",     icon: "/spbuicon.png",          pinpoint: "/spbuiconpinpoint.png",     color: "#22c55e" },
+  { key: "Kilang",   label: "Kilang",   icon: "/kilangicon.png",        pinpoint: "/kilangiconpinpoint.png",   color: "#f97316" },
+  { key: "Storage",  label: "Storage",  icon: "/storageicon.png",       pinpoint: "/storageiconpinpoint.png",  color: "#8b5cf6" },
+  { key: "Terminal", label: "Terminal", icon: "/terminalicon.png",      pinpoint: "/terminaliconpinpoint.png", color: "#14b8a6" },
+  { key: "Upstream", label: "Upstream", icon: "/upstreamicon.png",      pinpoint: "/upstreamiconpinpoint.png", color: "#3b82f6" },
+];
+
+const CAT_COLOR: Record<string, string> = {
+  SPBU:     "bg-emerald-100 text-emerald-700",
+  Kilang:   "bg-orange-100 text-orange-700",
+  Storage:  "bg-violet-100 text-violet-700",
+  Terminal: "bg-teal-100 text-teal-700",
+  Upstream: "bg-blue-100 text-blue-700",
 };
 
-const statusConfig = {
-  Live: { dot: "bg-emerald-500", badge: "text-emerald-600 bg-emerald-50" },
-  Alert: { dot: "bg-red-500", badge: "text-red-600 bg-red-50" },
-  Offline: { dot: "bg-slate-400", badge: "text-slate-500 bg-slate-100" },
-};
+const REGIONS: { key: string; label: string }[] = [
+  { key: "Semua",      label: "Semua" },
+  { key: "Jawa",       label: "Jawa" },
+  { key: "Sumatera",   label: "Sumatera" },
+  { key: "Kalimantan", label: "Kalimantan" },
+  { key: "Sulawesi",   label: "Sulawesi" },
+  { key: "Bali & NTT", label: "Bali & NTT" },
+  { key: "Maluku",     label: "Maluku" },
+  { key: "Papua",      label: "Papua" },
+];
 
-export default function LiveCCTVPage() {
-  const [selected, setSelected] = useState(cctvCameras[0].id);
-  const mainCam = cctvCameras.find(c => c.id === selected) ?? cctvCameras[0];
+const CAM_BG = ["#0d2137", "#0d2a1e", "#1e1533", "#1e1a00", "#122a2a", "#0d1a3b"];
+
+// ── Camera feed simulation ────────────────────────────────────────────────────
+function CamFeed({ cam, locationName }: { cam: { id: string; name: string; status: string }; locationName: string }) {
+  const bgIdx = parseInt(cam.id.replace(/\D/g, "")) % CAM_BG.length;
+  const isAlert   = cam.status === "Alert";
+  const isOffline = cam.status === "Offline";
+  const ts = `${String(10 + bgIdx).padStart(2, "0")}:${String(bgIdx * 7 % 60).padStart(2, "0")}:${String(bgIdx * 13 % 60).padStart(2, "0")}`;
 
   return (
-    <DashboardLayout title="Live CCTV" subtitle="360° Camera Monitoring · Vessel · Truck · SPBU · Pipeline · Driver">
-      <div className="flex gap-4 h-[calc(100vh-120px)]">
-        {/* Camera list */}
-        <div className="w-64 flex-shrink-0 bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col">
-          <div className="px-4 py-3 border-b border-slate-100">
-            <h3 className="text-sm font-semibold text-slate-800">All Cameras</h3>
-            <p className="text-[10px] text-slate-400">{cctvCameras.filter(c => c.status === "Live").length} Live · {cctvCameras.filter(c => c.status === "Alert").length} Alert</p>
-          </div>
-          <div className="overflow-y-auto flex-1">
-            {cctvCameras.map((cam) => {
-              const sc = statusConfig[cam.status as keyof typeof statusConfig];
-              return (
-                <button
-                  key={cam.id}
-                  onClick={() => setSelected(cam.id)}
-                  className={`w-full flex items-start gap-2.5 px-3 py-2.5 border-b border-slate-50 hover:bg-slate-50 transition-colors text-left ${selected === cam.id ? "bg-slate-50 border-l-2 border-l-blue-500" : ""}`}
-                >
-                  <div className="w-10 h-7 rounded bg-slate-800 flex items-center justify-center flex-shrink-0 relative">
-                    {cam.status === "Offline" ? (
-                      <WifiOff size={10} className="text-slate-500" />
-                    ) : (
-                      <Camera size={10} className="text-slate-400" />
-                    )}
-                    <span className={`absolute bottom-0.5 right-0.5 w-1.5 h-1.5 rounded-full ${sc.dot} ${cam.status !== "Offline" ? "animate-pulse" : ""}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold text-slate-700 truncate">{cam.name}</p>
-                    <p className="text-[10px] text-slate-400 truncate">{cam.location}</p>
-                    <div className="flex items-center gap-1 mt-0.5">
-                      <span className={`text-[9px] font-semibold px-1 py-0.5 rounded ${typeColors[cam.type] ?? "bg-slate-100 text-slate-600"}`}>{cam.type}</span>
-                      <span className={`text-[9px] font-semibold px-1 py-0.5 rounded ${sc.badge}`}>{cam.status}</span>
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+    <div
+      className="relative rounded-xl overflow-hidden"
+      style={{ background: CAM_BG[bgIdx], aspectRatio: "16/9" }}
+    >
+      {/* Scanline overlay */}
+      <div className="absolute inset-0 pointer-events-none opacity-20"
+        style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.3) 2px,rgba(0,0,0,.3) 4px)" }} />
+
+      {isOffline ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80">
+          <WifiOff size={20} className="text-slate-500 mb-1" />
+          <p className="text-slate-500 text-[10px]">Offline</p>
         </div>
+      ) : (
+        <>
+          {/* Alert tint */}
+          {isAlert && <div className="absolute inset-0 bg-red-900/20 pointer-events-none" />}
 
-        {/* Main view */}
-        <div className="flex-1 flex flex-col gap-3 min-w-0">
-          {/* Primary feed */}
-          <div className="bg-slate-900 rounded-xl flex-1 overflow-hidden relative flex items-center justify-center shadow-sm border border-slate-700">
-            {mainCam.status === "Offline" ? (
-              <div className="text-center">
-                <WifiOff size={40} className="text-slate-600 mx-auto mb-2" />
-                <p className="text-slate-400 text-sm">Camera Offline</p>
-                <p className="text-slate-500 text-xs">{mainCam.name}</p>
-              </div>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <div className="w-full h-full bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 flex items-center justify-center">
-                  <div className="text-center">
-                    <Camera size={48} className="text-slate-600 mx-auto mb-3" />
-                    <p className="text-slate-400 text-sm font-semibold">{mainCam.name}</p>
-                    <p className="text-slate-500 text-xs">{mainCam.location}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-            {/* Overlay HUD */}
-            <div className="absolute top-3 left-3 flex items-center gap-2">
-              <span className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-semibold ${mainCam.status === "Alert" ? "bg-red-500/20 text-red-400 border border-red-500/40" : mainCam.status === "Offline" ? "bg-slate-700/60 text-slate-400" : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${mainCam.status === "Alert" ? "bg-red-400 animate-pulse" : mainCam.status === "Offline" ? "bg-slate-500" : "bg-emerald-400 animate-pulse"}`} />
-                {mainCam.status.toUpperCase()}
-              </span>
-              <span className="bg-black/40 text-white text-[10px] px-2 py-0.5 rounded-full">{mainCam.type}</span>
-            </div>
-            <div className="absolute top-3 right-3">
-              <button className="w-7 h-7 rounded-lg bg-black/40 flex items-center justify-center hover:bg-black/60 transition-colors">
-                <Maximize2 size={13} className="text-white" />
-              </button>
-            </div>
-            <div className="absolute bottom-3 left-3 text-[10px] text-white/60 bg-black/40 px-2 py-1 rounded-lg">
-              {mainCam.location} · Live
-            </div>
-            {mainCam.status === "Alert" && (
-              <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-red-500/20 border border-red-500/40 text-red-400 text-[10px] px-2 py-1 rounded-lg">
-                <AlertTriangle size={10} /> Anomaly Detected
-              </div>
-            )}
+          {/* Top-left badge */}
+          <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold"
+            style={{ background: isAlert ? "rgba(239,68,68,.9)" : "rgba(16,185,129,.9)", color: "#fff" }}>
+            <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+            {isAlert ? "ALERT" : "LIVE"}
           </div>
 
-          {/* Thumbnail grid */}
-          <div className="grid grid-cols-4 gap-2">
-            {cctvCameras.filter(c => c.id !== mainCam.id).slice(0, 4).map((cam) => {
-              const sc = statusConfig[cam.status as keyof typeof statusConfig];
-              return (
-                <button
-                  key={cam.id}
-                  onClick={() => setSelected(cam.id)}
-                  className="aspect-video bg-slate-800 rounded-lg overflow-hidden relative flex items-center justify-center hover:ring-2 hover:ring-blue-400 transition-all"
-                >
-                  <Camera size={14} className="text-slate-600" />
-                  <span className="absolute top-1 left-1 text-[7px] text-white bg-black/50 px-1 rounded">{cam.type}</span>
-                  <span className={`absolute bottom-1 right-1 w-2 h-2 rounded-full ${sc.dot} ${cam.status !== "Offline" ? "animate-pulse" : ""}`} />
-                  <p className="absolute bottom-1 left-1 text-[7px] text-slate-400 truncate max-w-[80%]">{cam.name.split(" – ")[0]}</p>
-                </button>
-              );
-            })}
+          {/* Timestamp top-right */}
+          <div className="absolute top-2 right-2 text-[9px] font-mono text-emerald-400 font-semibold">
+            {ts}
           </div>
+
+          {/* Alert icon */}
+          {isAlert && (
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <AlertTriangle size={24} className="text-red-400 opacity-40" />
+            </div>
+          )}
+
+          {/* Camera icon (subtle) */}
+          {!isAlert && (
+            <div className="absolute inset-0 flex items-center justify-center opacity-10">
+              <Camera size={32} className="text-white" />
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Bottom labels */}
+      <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/80 to-transparent">
+        <p className="text-white text-[9px] font-semibold truncate">{cam.name}</p>
+        <p className="text-white/50 text-[8px] truncate">{locationName}</p>
+      </div>
+    </div>
+  );
+}
+
+// ── Location list item ────────────────────────────────────────────────────────
+function LocationRow({
+  loc,
+  isSelected,
+  onClick,
+}: { loc: CctvLocation; isSelected: boolean; onClick: () => void }) {
+  const online  = loc.cameras.filter((c) => c.status === "Live").length;
+  const alerts  = loc.cameras.filter((c) => c.status === "Alert").length;
+  const offline = loc.cameras.filter((c) => c.status === "Offline").length;
+  const catCfg  = CATEGORIES.find((c) => c.key === loc.type);
+
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-2.5 px-3 py-2.5 border-b border-slate-50 transition-colors text-left group ${
+        isSelected
+          ? "bg-blue-50 border-l-2 border-l-blue-500"
+          : "hover:bg-slate-50 border-l-2 border-l-transparent"
+      }`}
+    >
+      {/* Category icon */}
+      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-slate-50">
+        {catCfg?.icon ? (
+          <div className="relative w-5 h-5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={catCfg.icon} alt={loc.type} className="w-full h-full object-contain" />
+          </div>
+        ) : (
+          <Camera size={14} className="text-slate-400" />
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <p className={`text-[12px] font-semibold truncate ${isSelected ? "text-blue-700" : "text-slate-800"}`}>
+          {loc.name}
+        </p>
+        <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+          {/* Region badge */}
+          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+            {loc.region}
+          </span>
+          {/* Type badge */}
+          <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${CAT_COLOR[loc.type] ?? "bg-slate-100 text-slate-600"}`}>
+            {loc.type}
+          </span>
         </div>
+        <div className="flex items-center gap-2 mt-1 text-[9px]">
+          {online > 0  && <span className="text-emerald-600 font-semibold">● {online} online</span>}
+          {alerts > 0  && <span className="text-red-500 font-semibold">⚠ {alerts} alert</span>}
+          {offline > 0 && <span className="text-slate-400">◯ {offline} off</span>}
+        </div>
+      </div>
 
-        {/* Right info panel */}
-        <div className="w-56 flex-shrink-0 flex flex-col gap-3">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-4 flex-1">
-            <h4 className="text-xs font-semibold text-slate-700 mb-3">Camera Info</h4>
-            <div className="space-y-2.5 text-[11px]">
-              <div>
-                <p className="text-slate-400">Name</p>
-                <p className="font-semibold text-slate-700">{mainCam.name}</p>
-              </div>
-              <div>
-                <p className="text-slate-400">Location</p>
-                <p className="font-semibold text-slate-700">{mainCam.location}</p>
-              </div>
-              <div>
-                <p className="text-slate-400">Type</p>
-                <span className={`inline-block text-[10px] font-semibold px-1.5 py-0.5 rounded ${typeColors[mainCam.type] ?? ""}`}>{mainCam.type}</span>
-              </div>
-              <div>
-                <p className="text-slate-400">Status</p>
-                <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded ${statusConfig[mainCam.status as keyof typeof statusConfig].badge}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[mainCam.status as keyof typeof statusConfig].dot}`} />
-                  {mainCam.status}
-                </span>
-              </div>
+      {/* Camera count + arrow */}
+      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+        <div className="flex items-center gap-0.5 text-slate-400">
+          <Camera size={10} />
+          <span className="text-[10px] font-semibold">{loc.cameras.length}</span>
+        </div>
+        <svg viewBox="0 0 8 12" width="6" height="10" className="text-slate-300 group-hover:text-slate-400">
+          <path d="M1 1l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+        </svg>
+      </div>
+    </button>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+export default function LiveCCTVPage() {
+  const [selectedId,  setSelectedId]  = useState<string | null>(null);
+  const [catFilter,   setCatFilter]   = useState("Semua");
+  const [regFilter,   setRegFilter]   = useState("Semua");
+  const [searchQ,     setSearchQ]     = useState("");
+
+  const selectedLoc = useMemo(
+    () => cctvLocations.find((l) => l.id === selectedId) ?? null,
+    [selectedId]
+  );
+
+  // Global stats
+  const totalCams   = cctvLocations.reduce((s, l) => s + l.cameras.length, 0);
+  const totalOnline = cctvLocations.reduce((s, l) => s + l.cameras.filter((c) => c.status === "Live").length, 0);
+  const totalAlert  = cctvLocations.reduce((s, l) => s + l.cameras.filter((c) => c.status === "Alert").length, 0);
+  const totalOff    = cctvLocations.reduce((s, l) => s + l.cameras.filter((c) => c.status === "Offline").length, 0);
+
+  // Filtered locations for list
+  const filteredLocs = useMemo(() => {
+    return cctvLocations.filter((l) => {
+      const catOk = catFilter === "Semua" || l.type === catFilter;
+      const regOk = regFilter === "Semua" || l.region === regFilter;
+      const srchOk = searchQ === "" ||
+        l.name.toLowerCase().includes(searchQ.toLowerCase()) ||
+        l.location.toLowerCase().includes(searchQ.toLowerCase());
+      return catOk && regOk && srchOk;
+    });
+  }, [catFilter, regFilter, searchQ]);
+
+  // Region counts
+  const regionCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    cctvLocations.forEach((l) => {
+      counts[l.region] = (counts[l.region] ?? 0) + 1;
+    });
+    return counts;
+  }, []);
+
+  return (
+    <DashboardLayout title="Live CCTV · Monitor Lokasi & Cabang" subtitle="Integrated Monitoring & Control Dashboard">
+      <div className="flex flex-col gap-3 h-full" style={{ minHeight: 0 }}>
+
+        {/* ── Stats header ──────────────────────────────────────────────────── */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 px-5 py-3 flex items-center justify-between flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">
+              <Camera size={16} className="text-blue-500" />
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-100">
-              <p className="text-[10px] font-semibold text-slate-700 mb-2">Stats</p>
-              {[
-                { label: "Resolution", value: "1080p" },
-                { label: "FPS", value: "30" },
-                { label: "Uptime", value: "99.2%" },
-                { label: "Bitrate", value: "4.2 Mbps" },
-              ].map(s => (
-                <div key={s.label} className="flex justify-between text-[10px] mb-1">
-                  <span className="text-slate-400">{s.label}</span>
-                  <span className="font-medium text-slate-700">{s.value}</span>
-                </div>
-              ))}
+            <div>
+              <p className="text-sm font-bold text-slate-800">Live CCTV Monitoring</p>
+              <p className="text-[10px] text-slate-400">Pantau seluruh lokasi Pertamina secara real-time</p>
             </div>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-3">
-            <p className="text-[10px] font-semibold text-slate-700 mb-2">Recent Events</p>
+          <div className="flex items-center gap-4">
             {[
-              { event: "Motion detected", time: "14:32" },
-              { event: "Vehicle entered", time: "14:28" },
-              { event: "AI anomaly check", time: "14:20" },
-            ].map((e, i) => (
-              <div key={i} className="flex justify-between text-[10px] mb-1.5">
-                <span className="text-slate-600">{e.event}</span>
-                <span className="text-slate-400">{e.time}</span>
+              { label: "Kamera",  value: totalCams,   color: "text-slate-700",   dot: "bg-slate-400" },
+              { label: "Online",  value: totalOnline, color: "text-emerald-600", dot: "bg-emerald-500" },
+              { label: "Alert",   value: totalAlert,  color: "text-red-600",     dot: "bg-red-500" },
+              { label: "Offline", value: totalOff,    color: "text-slate-400",   dot: "bg-slate-300" },
+            ].map((s) => (
+              <div key={s.label} className="flex items-center gap-1.5">
+                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${s.dot}`} />
+                <span className={`text-xs font-bold ${s.color}`}>{s.value}</span>
+                <span className="text-[10px] text-slate-400">{s.label}</span>
               </div>
             ))}
+            <button className="flex items-center gap-1.5 px-3 h-7 rounded-lg border border-slate-200 text-slate-500 text-[11px] font-semibold hover:bg-slate-50 transition-colors">
+              <RefreshCw size={11} /> Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* ── Main content ──────────────────────────────────────────────────── */}
+        <div className="flex gap-3 flex-1 min-h-0">
+
+          {/* ── Left panel: location list ─────────────────────────────────── */}
+          <div className="w-[330px] flex-shrink-0 bg-white rounded-2xl shadow-sm border border-slate-100 flex flex-col min-h-0">
+            {/* Search */}
+            <div className="px-3 pt-3 pb-2 flex-shrink-0">
+              <div className="flex items-center gap-2 px-3 h-8 bg-slate-50 rounded-lg">
+                <Search size={12} className="text-slate-400 flex-shrink-0" />
+                <input
+                  value={searchQ}
+                  onChange={(e) => setSearchQ(e.target.value)}
+                  placeholder="Cari lokasi, kota, pulau..."
+                  className="flex-1 text-[11px] bg-transparent outline-none text-slate-700 placeholder:text-slate-400"
+                />
+              </div>
+            </div>
+
+            {/* Category filter tabs */}
+            <div className="px-3 pb-2 flex-shrink-0">
+              <div className="flex flex-wrap gap-1">
+                {CATEGORIES.map((cat) => (
+                  <button
+                    key={cat.key}
+                    onClick={() => setCatFilter(cat.key)}
+                    className={`flex items-center gap-1 px-2.5 h-6 rounded-full text-[10px] font-semibold transition-colors ${
+                      catFilter === cat.key
+                        ? "bg-[#1e2d4d] text-white"
+                        : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                    }`}
+                  >
+                    {cat.icon && (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={cat.icon} alt={cat.label} className="w-3 h-3 object-contain" />
+                    )}
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Count */}
+            <div className="px-4 pb-2 flex items-center justify-between flex-shrink-0">
+              <span className="text-[10px] text-slate-400">
+                <span className="font-bold text-slate-600">{filteredLocs.length}</span> lokasi ditemukan
+              </span>
+              <span className="text-[10px] text-slate-400">
+                <span className="font-bold text-slate-600">
+                  {filteredLocs.reduce((s, l) => s + l.cameras.length, 0)}
+                </span> kamera
+              </span>
+            </div>
+
+            {/* Scrollable list */}
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {filteredLocs.map((loc) => (
+                <LocationRow
+                  key={loc.id}
+                  loc={loc}
+                  isSelected={selectedId === loc.id}
+                  onClick={() => setSelectedId(selectedId === loc.id ? null : loc.id)}
+                />
+              ))}
+              {filteredLocs.length === 0 && (
+                <div className="flex flex-col items-center justify-center h-32 text-slate-400">
+                  <Camera size={24} className="mb-2 opacity-30" />
+                  <p className="text-xs">Tidak ada lokasi ditemukan</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* ── Right: map + CCTV panel ───────────────────────────────────── */}
+          <div className="flex-1 flex flex-col gap-3 min-h-0 min-w-0">
+
+            {/* Map area */}
+            <div className={`relative rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-100 flex-shrink-0 ${selectedLoc ? "flex-none" : "flex-1"}`}
+              style={{ height: selectedLoc ? "calc(100% - 268px)" : undefined, minHeight: selectedLoc ? 280 : undefined }}
+            >
+              <CctvMap
+                locations={cctvLocations}
+                selectedId={selectedId}
+                onSelect={(id) => setSelectedId(selectedId === id ? null : id)}
+                categoryFilter={catFilter}
+                regionFilter={regFilter}
+                height="100%"
+              />
+
+              {/* Region filter tabs (inside map, top overlay) */}
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[400] flex items-center gap-1 flex-nowrap overflow-x-auto max-w-[90%]"
+                style={{ scrollbarWidth: "none" }}>
+                <div className="flex items-center gap-1 bg-white/95 backdrop-blur-sm rounded-full px-2 py-1 shadow-md flex-nowrap">
+                  {REGIONS.map((r) => {
+                    const cnt = r.key === "Semua"
+                      ? cctvLocations.length
+                      : (regionCounts[r.key as CctvRegion] ?? 0);
+                    return (
+                      <button
+                        key={r.key}
+                        onClick={() => setRegFilter(r.key)}
+                        className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold transition-colors whitespace-nowrap ${
+                          regFilter === r.key
+                            ? "bg-[#1e2d4d] text-white"
+                            : "text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        {r.label}
+                        {cnt > 0 && (
+                          <span className={`text-[9px] px-1 py-0.5 rounded-full font-bold ${
+                            regFilter === r.key ? "bg-white/20" : "bg-slate-100 text-slate-500"
+                          }`}>{cnt}</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Legend (bottom-right) */}
+              <div className="absolute bottom-10 right-3 z-[400] bg-white/95 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md">
+                <p className="text-[8px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">KATEGORI</p>
+                {CATEGORIES.filter((c) => c.key !== "Semua").map((cat) => (
+                  <div key={cat.key} className="flex items-center gap-1.5 mb-1 last:mb-0">
+                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: cat.color }} />
+                    <span className="text-[9px] text-slate-600 font-medium">{cat.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Hint (when no selection) */}
+              {!selectedId && (
+                <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[400] bg-black/60 backdrop-blur-sm text-white text-[11px] px-3 py-1.5 rounded-full whitespace-nowrap pointer-events-none">
+                  Klik pin atau pilih lokasi dari daftar
+                </div>
+              )}
+            </div>
+
+            {/* ── CCTV Panel (conditional) ─────────────────────────────────── */}
+            {selectedLoc && (
+              <div className="flex-1 bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden flex flex-col min-h-0">
+                {/* Panel header */}
+                <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100 flex-shrink-0">
+                  <div className="flex items-center gap-2">
+                    {/* Category icon */}
+                    {CATEGORIES.find((c) => c.key === selectedLoc.type)?.icon && (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img
+                        src={CATEGORIES.find((c) => c.key === selectedLoc.type)!.icon}
+                        alt={selectedLoc.type}
+                        className="w-5 h-5 object-contain"
+                      />
+                    )}
+                    <p className="text-sm font-bold text-slate-800 truncate max-w-[200px]">{selectedLoc.name}</p>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                      {selectedLoc.region}
+                    </span>
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${CAT_COLOR[selectedLoc.type] ?? "bg-slate-100 text-slate-600"}`}>
+                      {selectedLoc.type}
+                    </span>
+                    {selectedLoc.cameras.some((c) => c.status === "Alert") && (
+                      <span className="flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-600">
+                        <AlertTriangle size={8} />
+                        {selectedLoc.cameras.filter((c) => c.status === "Alert").length} Alert
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {/* Camera dots */}
+                    <div className="flex items-center gap-1">
+                      {selectedLoc.cameras.slice(0, 4).map((cam) => (
+                        <span
+                          key={cam.id}
+                          className={`w-2 h-2 rounded-full ${
+                            cam.status === "Live"    ? "bg-emerald-500" :
+                            cam.status === "Alert"   ? "bg-red-500"     :
+                            "bg-slate-300"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {selectedLoc.cameras.filter((c) => c.status !== "Offline").length} live
+                    </span>
+                    <button
+                      onClick={() => setSelectedId(null)}
+                      className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center hover:bg-slate-200 transition-colors"
+                    >
+                      <X size={12} className="text-slate-500" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Camera grid */}
+                <div className="flex-1 p-3 min-h-0">
+                  <div className="grid grid-cols-4 gap-2 h-full">
+                    {selectedLoc.cameras.slice(0, 4).map((cam) => (
+                      <CamFeed key={cam.id} cam={cam} locationName={selectedLoc.name} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

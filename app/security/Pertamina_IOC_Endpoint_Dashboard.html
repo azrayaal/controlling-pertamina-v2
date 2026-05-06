@@ -1,0 +1,1626 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1600, initial-scale=1">
+<title>Pertamina IOC++ — Endpoint Monitoring &amp; Insider Risk</title>
+
+<!--
+================================================================================
+  PERTAMINA IOC++ — ENDPOINT MONITORING & INSIDER RISK DASHBOARD (mockup)
+  Single self-contained file. Open in any modern browser.
+
+  DEMO LOGIN
+  ----------
+  Username: admin@pertamina.co.id
+  Password: pertamina-2026
+
+  HOW TO PRESENT
+  --------------
+  Press F11 for full-screen, then log in. Click any device row in
+  Devices to see drill-down (incl. mobile location map).
+================================================================================
+-->
+
+<style>
+:root {
+  --pertamina-red:    #E30613;
+  --pertamina-navy:   #002F5F;
+  --pertamina-navy-2: #00224A;
+  --wing-red:         #E30613;
+  --wing-teal:        #00A8B5;
+  --wing-green:       #00A551;
+
+  --bg:           #061224;
+  --panel:        #0E2240;
+  --panel-2:      #163056;
+  --panel-line:   #1F3F6C;
+  --panel-hover:  #1A3A65;
+  --text:         #E8F0F7;
+  --text-muted:   #6E8AAD;
+  --text-dim:     #9DBCD8;
+  --accent:       #00A8B5;
+  --green:        #2EE39B;
+  --amber:        #FFB347;
+  --red:          #FF4757;
+  --crit-bg:      #2A0810;
+  --warn-bg:      #2A1A08;
+  --ok-bg:        #042A18;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Segoe UI', Arial, Helvetica, sans-serif; }
+
+/* ============== LOGIN SCREEN ============== */
+#login-screen {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background:
+    radial-gradient(ellipse at top, #0a3060 0%, #061224 60%) no-repeat,
+    var(--pertamina-navy);
+  z-index: 1000;
+}
+.login-card {
+  width: 460px;
+  background: rgba(14, 34, 64, 0.85);
+  border: 1px solid var(--panel-line);
+  border-radius: 8px;
+  padding: 40px;
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+.login-card::before {
+  content: ""; position: absolute; left: 0; top: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg,
+    var(--wing-red) 0%, var(--wing-red) 33%,
+    var(--wing-teal) 33%, var(--wing-teal) 66%,
+    var(--wing-green) 66%, var(--wing-green) 100%);
+}
+.login-brand { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+.brand-mark { width: 42px; height: 28px; flex: 0 0 42px; }
+.login-brand h1 { font-size: 22px; font-weight: 900; letter-spacing: 1px; }
+.login-brand .sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; letter-spacing: 1px; }
+.login-card h2 { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+.login-card .desc { color: var(--text-muted); font-size: 13px; margin-bottom: 24px; }
+.field { margin-bottom: 16px; }
+.field label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; font-weight: 600; }
+.field input {
+  width: 100%; padding: 12px 14px;
+  background: rgba(0, 0, 0, 0.3); border: 1px solid var(--panel-line);
+  border-radius: 4px; color: var(--text); font-size: 14px;
+}
+.field input:focus { outline: none; border-color: var(--accent); }
+.btn-primary {
+  width: 100%; padding: 12px; background: var(--pertamina-red);
+  color: white; border: none; border-radius: 4px;
+  font-size: 14px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px;
+}
+.btn-primary:hover { background: #B30510; }
+.demo-creds {
+  margin-top: 18px; padding: 10px 14px;
+  background: rgba(0, 168, 181, 0.08); border: 1px dashed var(--accent);
+  border-radius: 4px; font-size: 12px; color: var(--accent);
+}
+.login-error {
+  margin-top: 12px; color: var(--red); font-size: 13px;
+  padding: 8px; background: var(--crit-bg); border-radius: 3px; display: none;
+}
+.login-error.show { display: block; }
+.login-foot {
+  position: absolute; bottom: 24px; left: 0; right: 0;
+  text-align: center; color: var(--text-muted); font-size: 11px;
+}
+
+/* ============== APP SHELL ============== */
+#main-app { display: none; height: 100vh; }
+#main-app.show { display: grid; grid-template-rows: 56px 1fr; grid-template-columns: 240px 1fr; }
+.topbar {
+  grid-column: 1 / -1; display: flex; align-items: center;
+  background: var(--pertamina-navy); padding: 0 18px; gap: 16px;
+  position: relative;
+}
+.topbar::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+  background: linear-gradient(90deg, var(--wing-red) 33%, var(--wing-teal) 33%, var(--wing-teal) 66%, var(--wing-green) 66%);
+}
+.topbar h1 { font-size: 16px; font-weight: 900; letter-spacing: 1px; }
+.topbar .sub { font-size: 12px; color: var(--text-dim); margin-left: 4px; }
+.topbar .spacer { flex: 1; }
+.topbar .user {
+  display: flex; align-items: center; gap: 10px; padding: 6px 12px;
+  background: rgba(0,0,0,0.2); border-radius: 4px; font-size: 13px;
+}
+.topbar .user .role { color: var(--amber); font-weight: 700; font-size: 11px; }
+.topbar a.logout { color: var(--text-dim); font-size: 12px; text-decoration: none; padding: 4px 8px; }
+.topbar a.logout:hover { color: var(--red); }
+
+/* Sidebar */
+.sidebar {
+  background: var(--panel); border-right: 1px solid var(--panel-line);
+  overflow-y: auto;
+}
+.sidebar nav { padding: 10px 0; }
+.sidebar nav a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 18px; color: var(--text-dim); text-decoration: none;
+  font-size: 13px; border-left: 3px solid transparent;
+}
+.sidebar nav a:hover { background: var(--panel-hover); color: var(--text); }
+.sidebar nav a.active {
+  background: var(--panel-2); color: white; border-left-color: var(--pertamina-red);
+}
+.sidebar nav .icon { width: 18px; text-align: center; opacity: 0.85; }
+.sidebar .nav-section {
+  padding: 14px 18px 6px; font-size: 10px; color: var(--text-muted);
+  letter-spacing: 1px; text-transform: uppercase;
+}
+
+/* Main content */
+.main-content { overflow-y: auto; padding: 24px 28px; background: #050E1B; }
+.page { display: none; }
+.page.active { display: block; }
+.page-head { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+.page-head h2 { font-size: 22px; font-weight: 800; }
+.page-head .breadcrumb { color: var(--text-muted); font-size: 13px; }
+
+/* Cards / panels */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.kpi {
+  background: var(--panel); border: 1px solid var(--panel-line);
+  border-radius: 6px; padding: 16px 18px;
+}
+.kpi-label { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; font-weight: 700; }
+.kpi-value { font-size: 36px; font-weight: 900; line-height: 1; margin-top: 8px; }
+.kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+.kpi.green .kpi-value { color: var(--green); }
+.kpi.amber .kpi-value { color: var(--amber); }
+.kpi.red .kpi-value { color: var(--red); }
+
+.card {
+  background: var(--panel); border: 1px solid var(--panel-line);
+  border-radius: 6px; margin-bottom: 18px; overflow: hidden;
+}
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: var(--panel-2);
+  border-bottom: 2px solid var(--pertamina-red);
+}
+.card-head h3 { font-size: 13px; font-weight: 800; letter-spacing: 1px; }
+.card-head .tag { font-size: 11px; color: var(--text-muted); }
+.card-body { padding: 14px 16px; }
+
+.split { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; }
+.split-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th {
+  text-align: left; font-size: 10px; color: var(--text-muted);
+  font-weight: 700; letter-spacing: 1px; padding: 8px 10px;
+  border-bottom: 1px solid var(--panel-line); text-transform: uppercase;
+}
+tbody tr { border-bottom: 1px solid var(--panel-line); cursor: pointer; }
+tbody tr:hover { background: var(--panel-hover); }
+tbody td { padding: 10px; vertical-align: middle; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; vertical-align: middle; margin-right: 6px; }
+.dot.green { background: var(--green); }
+.dot.amber { background: var(--amber); }
+.dot.red { background: var(--red); }
+.dot.blue { background: var(--accent); }
+
+.pill {
+  display: inline-block; padding: 2px 8px; border-radius: 12px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.5px;
+}
+.pill.green { background: rgba(46, 227, 155, 0.15); color: var(--green); }
+.pill.amber { background: rgba(255, 179, 71, 0.15); color: var(--amber); }
+.pill.red { background: rgba(255, 71, 87, 0.15); color: var(--red); }
+.pill.blue { background: rgba(0, 168, 181, 0.15); color: var(--accent); }
+
+.search-box {
+  display: flex; gap: 10px; margin-bottom: 14px;
+}
+.search-box input {
+  flex: 1; padding: 10px 12px;
+  background: var(--panel); border: 1px solid var(--panel-line);
+  border-radius: 4px; color: var(--text); font-size: 13px;
+}
+.search-box select {
+  padding: 10px 12px; background: var(--panel);
+  border: 1px solid var(--panel-line); border-radius: 4px;
+  color: var(--text); font-size: 13px;
+}
+
+/* Risk score bar */
+.risk-bar { height: 6px; background: var(--panel-line); border-radius: 3px; overflow: hidden; width: 80px; display: inline-block; vertical-align: middle; }
+.risk-bar > span { display: block; height: 100%; }
+.risk-bar > span.low { background: var(--green); }
+.risk-bar > span.med { background: var(--amber); }
+.risk-bar > span.high { background: var(--red); }
+
+/* Alert rows */
+.alert-row {
+  display: grid; grid-template-columns: 4px 110px 1fr auto; gap: 12px;
+  padding: 10px 14px; border-bottom: 1px solid var(--panel-line);
+  align-items: center;
+}
+.alert-row.crit { border-left: 4px solid var(--red); }
+.alert-row.warn { border-left: 4px solid var(--amber); }
+.alert-row .sev { font-size: 11px; font-weight: 800; color: var(--text-dim); }
+.alert-row.crit .sev { color: var(--red); }
+.alert-row.warn .sev { color: var(--amber); }
+.alert-row .body .name { font-weight: 700; font-size: 13px; }
+.alert-row .body .desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.alert-row .actions a { color: var(--accent); font-size: 11px; text-decoration: none; }
+
+/* Modal */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7);
+  display: none; align-items: flex-start; justify-content: center;
+  z-index: 500; padding: 40px 20px; overflow-y: auto;
+}
+.modal-backdrop.show { display: flex; }
+.modal {
+  background: var(--panel); border: 1px solid var(--panel-line);
+  border-radius: 8px; width: 1100px; max-width: 100%;
+  overflow: hidden; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; background: var(--panel-2);
+  border-bottom: 2px solid var(--pertamina-red);
+}
+.modal-head h3 { font-size: 16px; font-weight: 800; }
+.modal-head .close {
+  background: transparent; border: 1px solid var(--panel-line);
+  color: var(--text-dim); padding: 4px 12px; border-radius: 3px;
+  font-size: 12px; cursor: pointer;
+}
+.modal-head .close:hover { background: var(--red); border-color: var(--red); color: white; }
+.modal-body { padding: 20px; }
+
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.detail-item { display: flex; flex-direction: column; gap: 3px; padding: 10px 0; border-bottom: 1px solid var(--panel-line); }
+.detail-item .label { font-size: 11px; color: var(--text-muted); letter-spacing: 0.5px; text-transform: uppercase; }
+.detail-item .value { font-size: 13px; font-weight: 600; }
+
+.timeline { padding: 0; list-style: none; }
+.timeline li {
+  position: relative; padding: 8px 0 8px 20px;
+  border-left: 1px solid var(--panel-line); margin-left: 6px;
+  font-size: 12px;
+}
+.timeline li::before {
+  content: ""; position: absolute; left: -5px; top: 14px;
+  width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
+}
+.timeline li.crit::before { background: var(--red); }
+.timeline li.warn::before { background: var(--amber); }
+.timeline li .t { color: var(--text-muted); font-size: 10px; margin-bottom: 2px; }
+
+/* Map */
+.map-wrap { background: #07172E; border-radius: 4px; overflow: hidden; padding: 12px; }
+.map-wrap svg { width: 100%; height: auto; display: block; }
+.map-pulse { animation: pulse 1.6s infinite; transform-origin: center; }
+@keyframes pulse {
+  0% { r: 5; opacity: 0.6; }
+  100% { r: 14; opacity: 0; }
+}
+
+.compliance-grid { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+.compliance-cell {
+  padding: 10px; border: 1px solid var(--panel-line); border-radius: 4px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.compliance-cell .lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+.compliance-cell .val { font-size: 14px; font-weight: 700; }
+.compliance-cell .val.green { color: var(--green); }
+.compliance-cell .val.red { color: var(--red); }
+.compliance-cell .val.amber { color: var(--amber); }
+
+.flex-row { display: flex; gap: 10px; align-items: center; }
+.staff-thumb {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--pertamina-navy));
+  display: inline-flex; align-items: center; justify-content: center;
+  color: white; font-weight: 800; font-size: 13px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ============== LOGIN SCREEN ============== -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-brand">
+      <svg class="brand-mark" viewBox="0 0 42 28">
+        <path d="M 2 6 L 30 6 L 40 14 L 30 14 Z" fill="var(--wing-red)"/>
+        <path d="M 2 12 L 26 12 L 34 20 L 26 20 Z" fill="var(--wing-teal)"/>
+        <path d="M 2 18 L 22 18 L 28 26 L 22 26 Z" fill="var(--wing-green)"/>
+      </svg>
+      <div>
+        <h1>PERTAMINA</h1>
+        <div class="sub">ENDPOINT MONITORING &amp; INSIDER RISK</div>
+      </div>
+    </div>
+    <h2>Sign in</h2>
+    <p class="desc">Authorised personnel only. All access is logged and audited.</p>
+    <form id="login-form">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="login-user" placeholder="name@pertamina.co.id" required autocomplete="off"/>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="login-pass" placeholder="••••••••" required autocomplete="off"/>
+      </div>
+      <button type="submit" class="btn-primary">Sign in</button>
+      <div id="login-error" class="login-error">Invalid credentials. Try the demo login below.</div>
+    </form>
+    <div class="demo-creds">
+      <strong>Demo (Root Admin):</strong><br>
+      Email: <code>admin@pertamina.co.id</code><br>
+      Password: <code>pertamina-2026</code>
+    </div>
+    <div style="margin-top: 16px; font-size: 11px; color: var(--text-muted);">
+      By signing in you acknowledge the Pertamina Acceptable Use Policy and the Endpoint Monitoring Notice (UU PDP compliant).
+    </div>
+  </div>
+  <div class="login-foot">
+    Confidential · Pertamina IOC++ Programme · UU 27/2022 (UU PDP) compliant · ISO 27001 controls
+  </div>
+</div>
+
+<!-- ============== MAIN APP ============== -->
+<div id="main-app">
+  <header class="topbar">
+    <svg class="brand-mark" viewBox="0 0 42 28" style="width:34px;height:22px;">
+      <path d="M 2 6 L 30 6 L 40 14 L 30 14 Z" fill="var(--wing-red)"/>
+      <path d="M 2 12 L 26 12 L 34 20 L 26 20 Z" fill="var(--wing-teal)"/>
+      <path d="M 2 18 L 22 18 L 28 26 L 22 26 Z" fill="var(--wing-green)"/>
+    </svg>
+    <h1>PERTAMINA</h1>
+    <span class="sub">· ENDPOINT MONITORING &amp; INSIDER RISK</span>
+    <span class="spacer"></span>
+    <span style="font-size:12px; color: var(--text-dim);" id="now-clock">— —</span>
+    <div class="user">
+      <div class="staff-thumb" style="width:28px;height:28px;font-size:11px;">RA</div>
+      <div>
+        <div style="font-weight:700;">Root Admin</div>
+        <div class="role">FULL ACCESS · ALL DEVICES</div>
+      </div>
+    </div>
+    <a href="#" class="logout" onclick="logout(); return false;">Sign out</a>
+  </header>
+
+  <aside class="sidebar">
+    <nav>
+      <div class="nav-section">Monitoring</div>
+      <a href="#overview" class="active" onclick="navigate('overview'); return false;"><span class="icon">▣</span> Overview</a>
+      <a href="#devices" onclick="navigate('devices'); return false;"><span class="icon">▤</span> Devices</a>
+      <a href="#personnel" onclick="navigate('personnel'); return false;"><span class="icon">◉</span> Personnel</a>
+      <a href="#files" onclick="navigate('files'); return false;"><span class="icon">▥</span> File Activity</a>
+      <a href="#locations" onclick="navigate('locations'); return false;"><span class="icon">⌖</span> Mobile Locations</a>
+
+      <div class="nav-section">Risk &amp; Security</div>
+      <a href="#risk" onclick="navigate('risk'); return false;"><span class="icon">⚑</span> Insider Risk</a>
+      <a href="#alerts" onclick="navigate('alerts'); return false;"><span class="icon">⚠</span> Alerts</a>
+
+      <div class="nav-section">Forensics  ·  Teramind-style</div>
+      <a href="#sessions" onclick="navigate('sessions'); return false;"><span class="icon">▶</span> Session Recordings</a>
+      <a href="#violations" onclick="navigate('violations'); return false;"><span class="icon">◈</span> Staff Violation Profiles</a>
+
+      <div class="nav-section">Audit</div>
+      <a href="#compliance" onclick="navigate('compliance'); return false;"><span class="icon">✓</span> Compliance</a>
+      <a href="#audit" onclick="navigate('audit'); return false;"><span class="icon">▤</span> Watcher Log</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <!-- Pages will be rendered here by JS -->
+    <div id="page-host"></div>
+  </main>
+</div>
+
+<!-- ============== DEVICE DETAIL MODAL ============== -->
+<div class="modal-backdrop" id="device-modal" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-head">
+      <h3 id="modal-title">Device detail</h3>
+      <button class="close" onclick="closeModal()">Close ✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+/* ================================================================================
+   SAMPLE DATA — realistic Pertamina-shaped sample
+================================================================================ */
+const STAFF = [
+  { id: "EMP001", name: "Budi Santoso",       nik: "C-12048",  dept: "Patra Niaga IT",       role: "Senior Engineer",       site: "Jakarta HQ", risk: 12 },
+  { id: "EMP002", name: "Ratna Wulandari",    nik: "C-13155",  dept: "Finance & Treasury",   role: "Manager",               site: "Jakarta HQ", risk: 8 },
+  { id: "EMP003", name: "Andi Pratama",       nik: "C-14392",  dept: "PIS Marine Ops",       role: "Cargo Officer",         site: "Tg.Priok",   risk: 31 },
+  { id: "EMP004", name: "Siti Anggraini",     nik: "C-15011",  dept: "Patra Niaga Retail",   role: "Regional Lead",         site: "Surabaya",   risk: 18 },
+  { id: "EMP005", name: "Hendra Kusuma",      nik: "C-15890",  dept: "Kilang RU IV",         role: "Process Engineer",      site: "Cilacap",    risk: 6 },
+  { id: "EMP006", name: "Dewi Sartika",       nik: "C-16224",  dept: "ITSMR / CDC",          role: "Cyber Defense Analyst", site: "Jakarta HQ", risk: 4 },
+  { id: "EMP007", name: "Joko Wibowo",        nik: "C-17031",  dept: "Procurement",          role: "Buyer",                 site: "Jakarta HQ", risk: 47 },
+  { id: "EMP008", name: "Maya Lestari",       nik: "C-17455",  dept: "Patra Niaga Retail",   role: "ANPR Operator",         site: "Surabaya",   risk: 9 },
+  { id: "EMP009", name: "Rizki Hermawan",     nik: "C-17811",  dept: "PIS Marine Ops",       role: "Vessel Coordinator",    site: "Balikpapan", risk: 14 },
+  { id: "EMP010", name: "Putri Cahyani",      nik: "C-18077",  dept: "Legal & Compliance",   role: "DPO Office",            site: "Jakarta HQ", risk: 5 },
+  { id: "EMP011", name: "Agus Setiawan",      nik: "C-18299",  dept: "Kilang RU V",          role: "Operator",              site: "Balikpapan", risk: 11 },
+  { id: "EMP012", name: "Lina Marlina",       nik: "C-18412",  dept: "Procurement",          role: "Senior Buyer",          site: "Jakarta HQ", risk: 73, note: "Notice period - 12 days remaining" },
+];
+
+const DEVICES = [
+  // Budi - Senior Engineer
+  { id: "PRT-LP-1001", type: "laptop",  model: "Dell Latitude 7440",   os: "Windows 11 23H2",        owner: "EMP001", compliance: "compliant",     lastSeen: "2026-05-08 14:32 WIB", site: "Jakarta HQ", encrypted: true,  patches: "current",  edr: "active" },
+  { id: "PRT-MB-2001", type: "mobile",  model: "Samsung Galaxy A55",   os: "Android 14",             owner: "EMP001", compliance: "compliant",     lastSeen: "2026-05-08 14:31 WIB", site: "Jakarta HQ", encrypted: true,  patches: "current",  edr: "active" },
+  { id: "PRT-DT-3001", type: "desktop", model: "HP EliteDesk 800",     os: "Windows 11 23H2",        owner: "EMP001", compliance: "compliant",     lastSeen: "2026-05-08 14:30 WIB", site: "Jakarta HQ", encrypted: true,  patches: "current",  edr: "active" },
+  // Ratna - Finance Manager
+  { id: "PRT-LP-1002", type: "laptop",  model: "Dell Latitude 5440",   os: "Windows 11 23H2",        owner: "EMP002", compliance: "compliant",     lastSeen: "2026-05-08 14:28 WIB", site: "Jakarta HQ", encrypted: true,  patches: "current",  edr: "active" },
+  { id: "PRT-MB-2002", type: "mobile",  model: "iPhone 15",            os: "iOS 17.5",               owner: "EMP002", compliance: "compliant",     lastSeen: "2026-05-08 14:27 WIB", site: "Jakarta HQ", encrypted: true,  patches: "current",  edr: "active" },
+  // Andi - PIS Marine
+  { id: "PRT-LP-1003", type: "laptop",  model: "Lenovo ThinkPad T14",  os: "Windows 11 23H2",        owner: "EMP003", compliance: "non-compliant", lastSeen: "2026-05-08 11:14 WIB", site: "Tg.Priok",   encrypted: true,  patches: "120 days behind", edr: "active", note: "Patch overdue 120 d" },
+  { id: "PRT-MB-2003", type: "mobile",  model: "Samsung Galaxy S24",   os: "Android 14",             owner: "EMP003", compliance: "compliant",     lastSeen: "2026-05-08 14:25 WIB", site: "Tg.Priok",   encrypted: true,  patches: "current",  edr: "active" },
+  // Siti - Patra Niaga Retail
+  { id: "PRT-LP-1004", type: "laptop",  model: "Dell Latitude 7440",   os: "Windows 11 23H2",        owner: "EMP004", compliance: "compliant",     lastSeen: "2026-05-08 14:24 WIB", site: "Surabaya",   encrypted: true,  patches: "current",  edr: "active" },
+  { id: "PRT-MB-2004", type: "mobile",  model: "iPhone 14",            os: "iOS 17.5",               owner: "EMP004", compliance: "compliant",     lastSeen: "2026-05-08 14:23 WIB", site: "Surabaya",   encrypted: true,  patches: "current",  edr: "active" },
+  // Hendra - Refinery
+  { id: "PRT-LP-1005", type: "laptop",  model: "Lenovo ThinkPad P14",  os: "Windows 11 23H2",        owner: "EMP005", compliance: "compliant",     lastSeen: "2026-05-08 14:22 WIB", site: "Cilacap",    encrypted: true,  patches: "current",  edr: "active" },
+  // Dewi - CDC analyst
+  { id: "PRT-LP-1006", type: "laptop",  model: "Dell Precision 3580",  os: "Windows 11 23H2",        owner: "EMP006", compliance: "compliant",     lastSeen: "2026-05-08 14:32 WIB", site: "Jakarta HQ", encrypted: true,  patches: "current",  edr: "active" },
+  { id: "PRT-MB-2006", type: "mobile",  model: "iPhone 15 Pro",        os: "iOS 17.5",               owner: "EMP006", compliance: "compliant",     lastSeen: "2026-05-08 14:30 WIB", site: "Jakarta HQ", encrypted: true,  patches: "current",  edr: "active" },
+  // Joko - Procurement (high risk)
+  { id: "PRT-LP-1007", type: "laptop",  model: "Dell Latitude 5440",   os: "Windows 11 23H2",        owner: "EMP007", compliance: "warning",       lastSeen: "2026-05-08 14:11 WIB", site: "Jakarta HQ", encrypted: true,  patches: "current",  edr: "active", note: "Risky-app TeamViewer detected" },
+  { id: "PRT-MB-2007", type: "mobile",  model: "Samsung Galaxy A55",   os: "Android 14",             owner: "EMP007", compliance: "compliant",     lastSeen: "2026-05-08 14:10 WIB", site: "Jakarta HQ", encrypted: true,  patches: "current",  edr: "active" },
+  // Maya - ANPR Operator
+  { id: "PRT-LP-1008", type: "laptop",  model: "Dell Latitude 7440",   os: "Windows 11 23H2",        owner: "EMP008", compliance: "compliant",     lastSeen: "2026-05-08 14:21 WIB", site: "Surabaya",   encrypted: true,  patches: "current",  edr: "active" },
+  // Rizki - Vessel Coordinator
+  { id: "PRT-LP-1009", type: "laptop",  model: "Lenovo ThinkPad T14",  os: "Windows 11 23H2",        owner: "EMP009", compliance: "compliant",     lastSeen: "2026-05-08 14:20 WIB", site: "Balikpapan", encrypted: true,  patches: "current",  edr: "active" },
+  { id: "PRT-MB-2009", type: "mobile",  model: "iPhone 14",            os: "iOS 17.5",               owner: "EMP009", compliance: "compliant",     lastSeen: "2026-05-08 14:18 WIB", site: "Balikpapan", encrypted: true,  patches: "current",  edr: "active" },
+  // Putri - Legal/DPO
+  { id: "PRT-LP-1010", type: "laptop",  model: "Dell Latitude 7440",   os: "Windows 11 23H2",        owner: "EMP010", compliance: "compliant",     lastSeen: "2026-05-08 14:17 WIB", site: "Jakarta HQ", encrypted: true,  patches: "current",  edr: "active" },
+  // Agus - RU V Operator
+  { id: "PRT-LP-1011", type: "laptop",  model: "Lenovo ThinkPad T14",  os: "Windows 11 23H2",        owner: "EMP011", compliance: "compliant",     lastSeen: "2026-05-08 14:16 WIB", site: "Balikpapan", encrypted: true,  patches: "current",  edr: "active" },
+  // Lina - Procurement (CRITICAL: notice period + activity spike)
+  { id: "PRT-LP-1012", type: "laptop",  model: "Dell Latitude 5440",   os: "Windows 11 23H2",        owner: "EMP012", compliance: "alert",         lastSeen: "2026-05-08 14:15 WIB", site: "Jakarta HQ", encrypted: true,  patches: "current",  edr: "active", note: "Mass file download spike — under investigation" },
+  { id: "PRT-MB-2012", type: "mobile",  model: "Samsung Galaxy S24",   os: "Android 14",             owner: "EMP012", compliance: "warning",       lastSeen: "2026-05-08 14:14 WIB", site: "Jakarta HQ", encrypted: true,  patches: "current",  edr: "active" },
+];
+
+const FILE_EVENTS = [
+  { time: "14:31", staff: "EMP012", device: "PRT-LP-1012", action: "USB copy",         file: "Q1-2026 vendor list.xlsx",            size: "3.2 MB",  classif: "Restricted", risk: "crit" },
+  { time: "14:18", staff: "EMP012", device: "PRT-LP-1012", action: "Email external",   file: "Tender bid Pertamina-2026-Q2.pdf",    size: "8.1 MB",  classif: "Restricted", risk: "crit" },
+  { time: "14:09", staff: "EMP007", device: "PRT-LP-1007", action: "Cloud upload",     file: "supplier-prices-2026.xlsx",            size: "1.4 MB",  classif: "Confidential", risk: "warn" },
+  { time: "13:42", staff: "EMP012", device: "PRT-LP-1012", action: "Mass download",    file: "847 files from SAP MM module",         size: "412 MB",  classif: "Confidential", risk: "crit" },
+  { time: "13:18", staff: "EMP003", device: "PRT-LP-1003", action: "Email external",   file: "vessel-schedule-Q2.xlsx",              size: "0.6 MB",  classif: "Internal",     risk: "warn" },
+  { time: "12:55", staff: "EMP002", device: "PRT-LP-1002", action: "Print",            file: "Treasury-statement-Apr.pdf",           size: "2.1 MB",  classif: "Confidential", risk: "info" },
+  { time: "11:14", staff: "EMP001", device: "PRT-LP-1001", action: "Sensitivity tag",  file: "IOC-architecture.docx → Confidential", size: "4.3 MB",  classif: "Confidential", risk: "info" },
+  { time: "09:32", staff: "EMP004", device: "PRT-LP-1004", action: "USB copy",         file: "SPBU-jatim-list.csv",                  size: "0.9 MB",  classif: "Internal",     risk: "info" },
+];
+
+const ALERTS = [
+  { sev: "crit", time: "14:31", asset: "EMP012 / PRT-LP-1012", desc: "USB copy of Restricted file 'Q1-2026 vendor list.xlsx' during 12-day notice-period window. Auto-correlation with prior 847-file SAP download. Investigation case INV-2026-0432 opened." },
+  { sev: "crit", time: "14:18", asset: "EMP012 / PRT-LP-1012", desc: "External email recipient first-seen: bidder-x@gmail.com. Attachment: Tender bid Pertamina-2026-Q2.pdf (Restricted)." },
+  { sev: "warn", time: "14:11", asset: "EMP007 / PRT-LP-1007", desc: "Risky-app TeamViewer detected on Procurement laptop. Auto-quarantined; staff notified." },
+  { sev: "crit", time: "13:42", asset: "EMP012 / PRT-LP-1012", desc: "Mass download anomaly: 847 files from SAP MM in 23 minutes. Compared to user 7-day baseline of 12 files/day." },
+  { sev: "warn", time: "11:14", asset: "EMP003 / PRT-LP-1003", desc: "Patch overdue 120 days. CVE-2025-XXX critical. Auto-ticket to ITSMR." },
+  { sev: "warn", time: "09:08", asset: "EMP008 / PRT-MB-2008", desc: "Unusual sign-in: VPN exit-node IP from outside designated travel pattern." },
+  { sev: "warn", time: "08:42", asset: "EMP012 / PRT-MB-2012", desc: "Auto-forward rule created on company mailbox forwarding to lina.marlina@yahoo.co.id. Rule reverted; case INV-2026-0432." },
+];
+
+// Mobile location history (lat/lon roughly mapped to map SVG coordinates)
+// Map view: 0..1500 horizontal = West to East Indonesia, 0..700 vertical
+const MOBILE_LOCATIONS = {
+  "PRT-MB-2001": [ // Budi - Jakarta HQ + commute
+    { time: "08:30", x: 575, y: 580, label: "Home (Bekasi)", duration: "00:45" },
+    { time: "09:15", x: 590, y: 575, label: "Pertamina HQ Tower", duration: "5h" },
+    { time: "12:30", x: 590, y: 575, label: "Lunch (HQ canteen)", duration: "1h" },
+    { time: "13:30", x: 590, y: 575, label: "Pertamina HQ Tower", duration: "ongoing" },
+  ],
+  "PRT-MB-2003": [ // Andi - Tg.Priok port + travel
+    { time: "07:45", x: 590, y: 580, label: "Home (Jakarta Utara)", duration: "00:30" },
+    { time: "08:15", x: 595, y: 575, label: "Tg.Priok Marine Office", duration: "3h" },
+    { time: "11:15", x: 600, y: 580, label: "Jetty 8, MT Patra 1 berth", duration: "2h" },
+    { time: "13:15", x: 595, y: 575, label: "Tg.Priok Marine Office", duration: "ongoing" },
+  ],
+  "PRT-MB-2007": [ // Joko - Procurement (warning)
+    { time: "08:00", x: 590, y: 575, label: "Pertamina HQ Tower", duration: "5h" },
+    { time: "13:00", x: 760, y: 590, label: "Anomaly: Bandung", duration: "1h", warn: true },
+    { time: "14:00", x: 590, y: 575, label: "Pertamina HQ Tower", duration: "ongoing" },
+  ],
+  "PRT-MB-2012": [ // Lina - Procurement (CRITICAL)
+    { time: "07:30", x: 575, y: 580, label: "Home (Tangerang)", duration: "00:45" },
+    { time: "08:15", x: 590, y: 575, label: "Pertamina HQ Tower", duration: "3h" },
+    { time: "11:15", x: 595, y: 580, label: "Anomaly: Mall Senayan, met external party", duration: "1h", crit: true },
+    { time: "12:15", x: 590, y: 575, label: "Pertamina HQ Tower", duration: "1h" },
+    { time: "13:15", x: 920, y: 290, label: "Anomaly: Singapore (international travel without notice)", duration: "ongoing", crit: true },
+  ],
+  "PRT-MB-2009": [ // Rizki - Balikpapan
+    { time: "08:00", x: 903, y: 378, label: "RU V Balikpapan office", duration: "ongoing" },
+  ],
+  "PRT-MB-2002": [ // Ratna - Jakarta finance
+    { time: "08:30", x: 590, y: 575, label: "Pertamina HQ Tower", duration: "ongoing" },
+  ],
+  "PRT-MB-2004": [ // Siti - Surabaya
+    { time: "08:00", x: 820, y: 580, label: "Patra Niaga Retail Surabaya", duration: "ongoing" },
+  ],
+  "PRT-MB-2006": [ // Dewi - CDC HQ
+    { time: "07:45", x: 590, y: 575, label: "Pertamina HQ CDC SOC", duration: "ongoing" },
+  ],
+};
+
+/* ================================================================================
+   AUTH (mock)
+================================================================================ */
+function login(user, pass) {
+  const valid = (user.toLowerCase() === "admin@pertamina.co.id" && pass === "pertamina-2026");
+  if (valid) {
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("main-app").classList.add("show");
+    navigate("overview");
+    tickClock(); setInterval(tickClock, 1000);
+  } else {
+    document.getElementById("login-error").classList.add("show");
+  }
+}
+function logout() {
+  document.getElementById("main-app").classList.remove("show");
+  document.getElementById("login-screen").style.display = "flex";
+  document.getElementById("login-form").reset();
+  document.getElementById("login-error").classList.remove("show");
+}
+document.getElementById("login-form").addEventListener("submit", e => {
+  e.preventDefault();
+  login(
+    document.getElementById("login-user").value.trim(),
+    document.getElementById("login-pass").value,
+  );
+});
+
+function tickClock() {
+  const d = new Date();
+  const utc = d.getTime() + d.getTimezoneOffset() * 60000;
+  const wib = new Date(utc + 7 * 3600000);
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const t = `${String(wib.getDate()).padStart(2,"0")} ${months[wib.getMonth()]} ${wib.getFullYear()}  ·  ${String(wib.getHours()).padStart(2,"0")}:${String(wib.getMinutes()).padStart(2,"0")}:${String(wib.getSeconds()).padStart(2,"0")} WIB`;
+  document.getElementById("now-clock").textContent = t;
+}
+
+/* ================================================================================
+   NAVIGATION
+================================================================================ */
+function navigate(page) {
+  document.querySelectorAll(".sidebar nav a").forEach(a => a.classList.remove("active"));
+  const link = document.querySelector(`.sidebar nav a[href="#${page}"]`);
+  if (link) link.classList.add("active");
+  const host = document.getElementById("page-host");
+  switch (page) {
+    case "overview":   host.innerHTML = renderOverview(); break;
+    case "devices":    host.innerHTML = renderDevices(); attachDeviceClicks(); break;
+    case "personnel":  host.innerHTML = renderPersonnel(); break;
+    case "files":      host.innerHTML = renderFiles(); break;
+    case "locations":  host.innerHTML = renderLocations(); break;
+    case "risk":       host.innerHTML = renderRisk(); break;
+    case "alerts":     host.innerHTML = renderAlerts(); break;
+    case "compliance": host.innerHTML = renderCompliance(); break;
+    case "audit":      host.innerHTML = renderAudit(); break;
+    case "sessions":   host.innerHTML = renderSessions(); break;
+    case "violations": host.innerHTML = renderViolations(); break;
+    default:           host.innerHTML = renderOverview();
+  }
+}
+
+/* ================================================================================
+   PAGES
+================================================================================ */
+function staffById(id) { return STAFF.find(s => s.id === id) || { name: id, dept: "Unknown" }; }
+function deviceById(id) { return DEVICES.find(d => d.id === id); }
+function compliancePill(c) {
+  if (c === "compliant")     return `<span class="pill green">Compliant</span>`;
+  if (c === "warning")       return `<span class="pill amber">Warning</span>`;
+  if (c === "non-compliant") return `<span class="pill red">Non-compliant</span>`;
+  if (c === "alert")         return `<span class="pill red">Under investigation</span>`;
+  return `<span class="pill blue">${c}</span>`;
+}
+function riskBar(score) {
+  const cls = score < 20 ? "low" : score < 50 ? "med" : "high";
+  return `<span class="risk-bar"><span class="${cls}" style="width:${score}%;"></span></span> <span style="margin-left:6px; font-size:11px; font-weight:700; color: ${score<20?'var(--green)':score<50?'var(--amber)':'var(--red)'};">${score}</span>`;
+}
+function deviceTypeIcon(t) {
+  return ({ laptop: "▭", desktop: "▣", mobile: "▮", tablet: "▤" })[t] || "▢";
+}
+
+/* ----- Overview ----- */
+function renderOverview() {
+  const total = DEVICES.length;
+  const compliant = DEVICES.filter(d => d.compliance === "compliant").length;
+  const alerts = ALERTS.length;
+  const critAlerts = ALERTS.filter(a => a.sev === "crit").length;
+  const highRiskUsers = STAFF.filter(s => s.risk >= 50).length;
+
+  return `
+  <div class="page active">
+    <div class="page-head">
+      <div>
+        <div class="breadcrumb">Monitoring › Overview</div>
+        <h2>Endpoint Monitoring &amp; Insider Risk — Overview</h2>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">Total devices</div><div class="kpi-value">${total}</div><div class="kpi-sub">${DEVICES.filter(d=>d.type==='laptop').length} laptops · ${DEVICES.filter(d=>d.type==='mobile').length} mobiles · ${DEVICES.filter(d=>d.type==='desktop').length} desktops</div></div>
+      <div class="kpi green"><div class="kpi-label">Compliant</div><div class="kpi-value">${Math.round(compliant/total*100)}%</div><div class="kpi-sub">${compliant} of ${total} devices · target ≥ 95%</div></div>
+      <div class="kpi red"><div class="kpi-label">Active alerts</div><div class="kpi-value">${alerts}</div><div class="kpi-sub">${critAlerts} critical · ${alerts-critAlerts} warning</div></div>
+      <div class="kpi amber"><div class="kpi-label">High-risk users</div><div class="kpi-value">${highRiskUsers}</div><div class="kpi-sub">risk score ≥ 50 · investigation in progress</div></div>
+    </div>
+
+    <div class="split">
+      <div class="card">
+        <div class="card-head"><h3>LATEST ALERTS</h3><span class="tag">last 30 min</span></div>
+        ${ALERTS.slice(0, 5).map(a => `
+          <div class="alert-row ${a.sev}">
+            <span></span>
+            <span class="sev">${a.sev === "crit" ? "CRIT" : "WARN"} · ${a.time}</span>
+            <div class="body">
+              <div class="name">${a.asset}</div>
+              <div class="desc">${a.desc}</div>
+            </div>
+            <div class="actions"><a href="#alerts" onclick="navigate('alerts'); return false;">View →</a></div>
+          </div>`).join("")}
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>HIGH-RISK USERS</h3><span class="tag">UEBA</span></div>
+        <div class="card-body">
+          <table>
+            <tbody>
+              ${[...STAFF].sort((a,b)=>b.risk-a.risk).slice(0,5).map(s => `
+                <tr onclick="navigate('personnel')">
+                  <td><div class="staff-thumb" style="width:30px;height:30px;font-size:11px;">${s.name.split(' ').map(p=>p[0]).slice(0,2).join('')}</div></td>
+                  <td><div style="font-weight:700;">${s.name}</div><div style="font-size:11px;color:var(--text-muted);">${s.dept}</div></td>
+                  <td>${riskBar(s.risk)}</td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="split-3">
+      <div class="card">
+        <div class="card-head"><h3>FILE ACTIVITY · TODAY</h3><span class="tag">DLP</span></div>
+        <div class="card-body" style="padding:0;">
+          <table>
+            <thead><tr><th>Time</th><th>User</th><th>Action</th><th>Class.</th></tr></thead>
+            <tbody>
+              ${FILE_EVENTS.slice(0, 5).map(f => `
+                <tr>
+                  <td style="font-size:11px;color:var(--text-muted);">${f.time}</td>
+                  <td>${staffById(f.staff).name.split(' ')[0]}</td>
+                  <td>${f.action}</td>
+                  <td><span class="pill ${f.classif==='Restricted'?'red':f.classif==='Confidential'?'amber':'blue'}">${f.classif}</span></td>
+                </tr>`).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>NETWORK HEALTH</h3><span class="tag">Intune + EDR</span></div>
+        <div class="card-body">
+          <div class="compliance-grid">
+            <div class="compliance-cell"><span class="lbl">Encryption</span><span class="val green">100%</span></div>
+            <div class="compliance-cell"><span class="lbl">EDR active</span><span class="val green">100%</span></div>
+            <div class="compliance-cell"><span class="lbl">Patch current</span><span class="val amber">${Math.round((DEVICES.filter(d=>d.patches==='current').length/total)*100)}%</span></div>
+            <div class="compliance-cell"><span class="lbl">MFA enrolled</span><span class="val green">100%</span></div>
+            <div class="compliance-cell"><span class="lbl">VPN compliant</span><span class="val green">98%</span></div>
+            <div class="compliance-cell"><span class="lbl">Sensitivity labels</span><span class="val amber">81%</span></div>
+            <div class="compliance-cell"><span class="lbl">DLP rules active</span><span class="val green">100%</span></div>
+            <div class="compliance-cell"><span class="lbl">Audit-trail seal</span><span class="val green">SEALED</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>LIVE INVESTIGATION</h3><span class="tag">case INV-2026-0432</span></div>
+        <div class="card-body">
+          <div style="font-size:13px; line-height:1.5;">
+            <div style="font-weight:800; color: var(--red); margin-bottom: 8px;">⚠ EMP012 — Lina Marlina</div>
+            <div style="font-size:11px; color: var(--text-muted); margin-bottom: 10px;">Procurement, Senior Buyer · Notice period 12 days remaining</div>
+            <ul class="timeline">
+              <li class="crit"><div class="t">14:31</div>USB copy: Restricted vendor list</li>
+              <li class="crit"><div class="t">14:18</div>External email to bidder-x@gmail.com</li>
+              <li class="crit"><div class="t">13:42</div>Mass download: 847 SAP files / 23 min</li>
+              <li class="warn"><div class="t">11:15</div>Off-site location anomaly: Mall Senayan</li>
+              <li class="warn"><div class="t">08:42</div>Auto-forward rule to personal yahoo.co.id</li>
+            </ul>
+            <div style="margin-top: 10px; font-size:11px; color: var(--text-dim);">→ HR + Legal notified. Devices remain logged. Awaiting case lead authorisation for next step.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ----- Devices ----- */
+function renderDevices() {
+  return `
+  <div class="page active">
+    <div class="page-head">
+      <div>
+        <div class="breadcrumb">Monitoring › Devices</div>
+        <h2>Devices · ${DEVICES.length} total</h2>
+      </div>
+    </div>
+    <div class="search-box">
+      <input id="dev-search" placeholder="Search by device ID, model, owner name…" oninput="filterDevices()"/>
+      <select id="dev-type-filter" onchange="filterDevices()">
+        <option value="">All types</option>
+        <option value="laptop">Laptops</option>
+        <option value="mobile">Mobile phones</option>
+        <option value="desktop">Desktops</option>
+        <option value="tablet">Tablets</option>
+      </select>
+      <select id="dev-comp-filter" onchange="filterDevices()">
+        <option value="">All compliance</option>
+        <option value="compliant">Compliant</option>
+        <option value="warning">Warning</option>
+        <option value="non-compliant">Non-compliant</option>
+        <option value="alert">Under investigation</option>
+      </select>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>ALL DEVICES</h3><span class="tag">click any row to drill in</span></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Device ID</th><th>Type</th><th>Model</th><th>OS</th>
+            <th>Assigned to</th><th>Department</th><th>Site</th>
+            <th>Compliance</th><th>Last seen</th>
+          </tr>
+        </thead>
+        <tbody id="dev-tbody">
+          ${DEVICES.map(d => deviceRow(d)).join("")}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+function deviceRow(d) {
+  const s = staffById(d.owner);
+  return `
+    <tr data-device="${d.id}" data-type="${d.type}" data-comp="${d.compliance}">
+      <td style="font-family: monospace; font-weight: 700; color: var(--accent);">${d.id}</td>
+      <td>${deviceTypeIcon(d.type)} ${d.type}</td>
+      <td>${d.model}</td>
+      <td style="font-size:11px; color: var(--text-dim);">${d.os}</td>
+      <td>${s.name}</td>
+      <td style="font-size:11px;">${s.dept}</td>
+      <td style="font-size:11px;">${d.site}</td>
+      <td>${compliancePill(d.compliance)}</td>
+      <td style="font-size:11px; color: var(--text-muted);">${d.lastSeen}</td>
+    </tr>`;
+}
+function attachDeviceClicks() {
+  document.querySelectorAll("#dev-tbody tr").forEach(row => {
+    row.onclick = () => openDeviceModal(row.getAttribute("data-device"));
+  });
+}
+function filterDevices() {
+  const q = (document.getElementById("dev-search").value || "").toLowerCase();
+  const type = document.getElementById("dev-type-filter").value;
+  const comp = document.getElementById("dev-comp-filter").value;
+  document.querySelectorAll("#dev-tbody tr").forEach(row => {
+    const text = row.textContent.toLowerCase();
+    const matches = (!q || text.includes(q)) && (!type || row.getAttribute("data-type")===type) && (!comp || row.getAttribute("data-comp")===comp);
+    row.style.display = matches ? "" : "none";
+  });
+}
+
+/* ----- Device modal ----- */
+function openDeviceModal(deviceId) {
+  const d = deviceById(deviceId);
+  if (!d) return;
+  const s = staffById(d.owner);
+  const isMobile = d.type === "mobile";
+  const locations = MOBILE_LOCATIONS[d.id] || [];
+  const userFiles = FILE_EVENTS.filter(f => f.device === d.id);
+  const userAlerts = ALERTS.filter(a => a.asset.includes(d.id) || a.asset.includes(s.id));
+
+  document.getElementById("modal-title").innerHTML = `${d.id} · ${d.model}`;
+  document.getElementById("modal-body").innerHTML = `
+    <div class="detail-grid">
+      <div>
+        <h4 style="margin-bottom:10px; font-size:13px; color: var(--accent); letter-spacing:1px;">DEVICE</h4>
+        <div class="detail-item"><span class="label">Device ID</span><span class="value" style="font-family:monospace;">${d.id}</span></div>
+        <div class="detail-item"><span class="label">Type · Model</span><span class="value">${deviceTypeIcon(d.type)} ${d.type} — ${d.model}</span></div>
+        <div class="detail-item"><span class="label">Operating system</span><span class="value">${d.os}</span></div>
+        <div class="detail-item"><span class="label">Compliance</span><span class="value">${compliancePill(d.compliance)} ${d.note ? `<span style="color: var(--amber); font-size:11px; margin-left:8px;">— ${d.note}</span>` : ""}</span></div>
+        <div class="detail-item"><span class="label">Encryption</span><span class="value" style="color: var(--green);">${d.encrypted ? "BitLocker / FileVault active" : "—"}</span></div>
+        <div class="detail-item"><span class="label">EDR / endpoint protection</span><span class="value" style="color: var(--green);">${d.edr === "active" ? "CrowdStrike Falcon active · last sync 5 min ago" : "—"}</span></div>
+        <div class="detail-item"><span class="label">Patch level</span><span class="value" style="color: ${d.patches==='current'?'var(--green)':'var(--amber)'};">${d.patches}</span></div>
+        <div class="detail-item"><span class="label">Last seen</span><span class="value">${d.lastSeen} · ${d.site}</span></div>
+      </div>
+      <div>
+        <h4 style="margin-bottom:10px; font-size:13px; color: var(--accent); letter-spacing:1px;">ASSIGNED TO</h4>
+        <div class="detail-item"><span class="label">Staff name</span><span class="value">${s.name}</span></div>
+        <div class="detail-item"><span class="label">Employee NIK</span><span class="value">${s.nik}</span></div>
+        <div class="detail-item"><span class="label">Department</span><span class="value">${s.dept}</span></div>
+        <div class="detail-item"><span class="label">Role</span><span class="value">${s.role}</span></div>
+        <div class="detail-item"><span class="label">Primary site</span><span class="value">${s.site}</span></div>
+        <div class="detail-item"><span class="label">Insider risk score</span><span class="value">${riskBar(s.risk)}</span></div>
+        ${s.note ? `<div class="detail-item"><span class="label">HR flag</span><span class="value" style="color: var(--red);">${s.note}</span></div>` : ""}
+        <div class="detail-item"><span class="label">Acknowledgment signed</span><span class="value" style="color: var(--green);">2026-02-14 (current policy v3.2)</span></div>
+      </div>
+    </div>
+
+    ${isMobile ? renderLocationMap(d, locations) : ""}
+
+    <div class="split" style="margin-top: 18px;">
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-head"><h3>RECENT FILE ACTIVITY</h3><span class="tag">DLP last 24h</span></div>
+        ${userFiles.length === 0 ? `<div class="card-body" style="color: var(--text-muted); font-size: 12px;">No DLP-tracked file activity in last 24 hours.</div>` :
+          `<table><thead><tr><th>Time</th><th>Action</th><th>File</th><th>Size</th><th>Class.</th></tr></thead>
+            <tbody>${userFiles.map(f => `
+              <tr>
+                <td>${f.time}</td>
+                <td>${f.action}</td>
+                <td style="font-size:11px;">${f.file}</td>
+                <td style="font-size:11px;">${f.size}</td>
+                <td><span class="pill ${f.classif==='Restricted'?'red':f.classif==='Confidential'?'amber':'blue'}">${f.classif}</span></td>
+              </tr>`).join("")}</tbody></table>`}
+      </div>
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-head"><h3>ALERT TIMELINE</h3><span class="tag">last 24h</span></div>
+        <div class="card-body">
+          ${userAlerts.length === 0 ? `<div style="color: var(--text-muted); font-size: 12px;">No alerts on this device.</div>` :
+            `<ul class="timeline">${userAlerts.map(a => `<li class="${a.sev}"><div class="t">${a.time}</div>${a.desc}</li>`).join("")}</ul>`}
+        </div>
+      </div>
+    </div>
+
+    <div class="split-3" style="margin-top: 18px;">
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-head"><h3>APPS</h3></div>
+        <div class="card-body" style="font-size:12px;">
+          <div style="margin-bottom:6px;"><span class="dot green"></span>Microsoft 365 (sanctioned)</div>
+          <div style="margin-bottom:6px;"><span class="dot green"></span>Pertamina SAP GUI (sanctioned)</div>
+          <div style="margin-bottom:6px;"><span class="dot green"></span>MyPertamina admin portal</div>
+          <div style="margin-bottom:6px;"><span class="dot green"></span>Cisco Secure Connect VPN</div>
+          ${d.compliance === "warning" ? `<div style="margin-bottom:6px;"><span class="dot amber"></span><span style="color: var(--amber);">TeamViewer (unsanctioned, quarantined)</span></div>` : ""}
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-head"><h3>NETWORK</h3></div>
+        <div class="card-body" style="font-size:12px;">
+          <div style="margin-bottom:6px;"><strong>Last 24h connections:</strong></div>
+          <div>VPN endpoint: id-jkt-vpn-01.pertamina.co.id</div>
+          <div>Wi-Fi: PERTAMINA-CORP (corp), PERTAMINA-GUEST</div>
+          <div>Bandwidth used today: ${(Math.random()*5+1).toFixed(1)} GB</div>
+          <div>Public-IP: 103.74.x.x (HQ)</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-head"><h3>ACTIONS</h3></div>
+        <div class="card-body" style="font-size:12px; display: flex; flex-direction: column; gap: 8px;">
+          <button class="btn-primary" style="background: var(--accent);">View full forensic timeline</button>
+          <button class="btn-primary" style="background: var(--amber);">Issue support ticket</button>
+          <button class="btn-primary" style="background: var(--red);">Lock device remotely (Intune)</button>
+          <div style="font-size:10px; color: var(--text-muted); margin-top: 4px;">All actions are logged in audit trail. UU PDP Art. 22 — automated decisions require human review.</div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById("device-modal").classList.add("show");
+}
+function indonesiaMapSVG(content) {
+  // Improved Indonesia map: better island outlines, city markers, gradient ocean.
+  return `
+    <svg viewBox="0 0 1500 700">
+      <defs>
+        <radialGradient id="oceanGrad" cx="50%" cy="50%" r="70%">
+          <stop offset="0%" stop-color="#0E2950"/>
+          <stop offset="100%" stop-color="#06122A"/>
+        </radialGradient>
+        <linearGradient id="landGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#1A3556"/>
+          <stop offset="100%" stop-color="#0E2240"/>
+        </linearGradient>
+      </defs>
+      <rect width="1500" height="700" fill="url(#oceanGrad)"/>
+      <!-- Faint lat/lon graticule -->
+      <g stroke="#152743" stroke-width="0.8" opacity="0.6">
+        <line x1="0" y1="180" x2="1500" y2="180"/>
+        <line x1="0" y1="360" x2="1500" y2="360"/>
+        <line x1="0" y1="540" x2="1500" y2="540"/>
+        <line x1="300" y1="0" x2="300" y2="700"/>
+        <line x1="600" y1="0" x2="600" y2="700"/>
+        <line x1="900" y1="0" x2="900" y2="700"/>
+        <line x1="1200" y1="0" x2="1200" y2="700"/>
+      </g>
+      <!-- Indonesia islands (refined silhouettes) -->
+      <g fill="url(#landGrad)" stroke="#3A5F90" stroke-width="1.4" stroke-linejoin="round">
+        <!-- Sumatra (NW-SE long island) -->
+        <path d="M 60 195 Q 95 200 120 215 Q 145 232 170 250 L 200 270 Q 230 290 255 312
+                  L 290 345 Q 320 375 350 410 L 390 450 Q 425 485 455 510 L 490 540 Q 510 555 525 562
+                  L 545 567 L 555 575 L 535 580 L 510 575 L 470 555 Q 430 530 395 500
+                  L 360 465 Q 330 435 300 405 L 265 365 Q 230 325 200 290 L 165 255 Q 130 225 100 210 Z"/>
+        <!-- Sumatra small islands -->
+        <ellipse cx="80" cy="260" rx="8" ry="14" fill="url(#landGrad)" stroke="#3A5F90" stroke-width="1.2"/>
+        <ellipse cx="160" cy="350" rx="8" ry="11" fill="url(#landGrad)" stroke="#3A5F90" stroke-width="1.2"/>
+        <ellipse cx="240" cy="445" rx="7" ry="10" fill="url(#landGrad)" stroke="#3A5F90" stroke-width="1.2"/>
+        <!-- Java (horizontal long) -->
+        <path d="M 480 545 Q 530 540 580 545 Q 640 549 700 553 Q 770 556 830 558 Q 900 560 960 562 Q 990 563 1010 567
+                  L 1015 580 L 990 590 Q 940 596 870 597 Q 790 600 720 599 Q 650 598 580 595 Q 520 590 485 580 Z"/>
+        <!-- Madura (small island NE of Java) -->
+        <path d="M 870 545 Q 905 543 940 547 L 945 555 Q 910 558 875 555 Z" fill="url(#landGrad)" stroke="#3A5F90" stroke-width="1.2"/>
+        <!-- Bali -->
+        <ellipse cx="1040" cy="595" rx="22" ry="11" fill="url(#landGrad)" stroke="#3A5F90" stroke-width="1.2"/>
+        <!-- Lombok -->
+        <ellipse cx="1090" cy="600" rx="18" ry="11" fill="url(#landGrad)" stroke="#3A5F90" stroke-width="1.2"/>
+        <!-- Sumbawa -->
+        <path d="M 1115 595 Q 1145 593 1175 597 Q 1190 599 1195 603 L 1190 613 Q 1160 615 1130 612 Q 1115 610 1110 605 Z" fill="url(#landGrad)" stroke="#3A5F90" stroke-width="1.2"/>
+        <!-- Flores -->
+        <path d="M 1205 600 Q 1235 598 1265 602 Q 1280 604 1290 608 L 1285 618 Q 1255 620 1220 617 Q 1205 615 1200 610 Z" fill="url(#landGrad)" stroke="#3A5F90" stroke-width="1.2"/>
+        <!-- Timor -->
+        <path d="M 1300 615 Q 1340 613 1370 619 L 1380 628 Q 1340 630 1300 626 Z" fill="url(#landGrad)" stroke="#3A5F90" stroke-width="1.2"/>
+        <!-- Kalimantan (large) -->
+        <path d="M 600 250 Q 660 240 720 240 Q 790 245 840 270 Q 890 295 920 335 Q 945 380 945 430 Q 940 470 905 500
+                  Q 860 525 805 525 Q 755 525 705 510 Q 660 495 625 460 Q 595 420 590 380 Q 585 335 595 290 Z"/>
+        <!-- Sulawesi (K-shape) -->
+        <path d="M 985 320 Q 1010 290 1040 280 Q 1070 285 1090 320 L 1085 360 Q 1080 380 1100 400
+                  L 1135 410 Q 1145 425 1130 450 L 1100 475 Q 1085 480 1075 470 L 1080 440 Q 1075 420 1055 410
+                  L 1040 425 L 1035 460 L 1010 470 Q 990 465 990 450 L 1010 410 Q 1000 390 985 380 L 990 350 Z"/>
+        <!-- Maluku islands -->
+        <ellipse cx="1215" cy="380" rx="16" ry="12" fill="url(#landGrad)" stroke="#3A5F90" stroke-width="1.2"/>
+        <ellipse cx="1240" cy="430" rx="11" ry="9" fill="url(#landGrad)" stroke="#3A5F90" stroke-width="1.2"/>
+        <ellipse cx="1265" cy="475" rx="13" ry="11" fill="url(#landGrad)" stroke="#3A5F90" stroke-width="1.2"/>
+        <ellipse cx="1190" cy="495" rx="9" ry="7" fill="url(#landGrad)" stroke="#3A5F90" stroke-width="1.2"/>
+        <!-- Papua (large eastern) -->
+        <path d="M 1295 365 Q 1340 350 1390 345 Q 1430 348 1465 365 Q 1490 390 1485 430 Q 1480 475 1455 500
+                  Q 1420 520 1380 520 Q 1335 520 1300 500 Q 1280 480 1278 450 Q 1280 410 1290 385 Z"/>
+      </g>
+
+      <!-- Major Pertamina cities + provinces -->
+      <g font-family="Arial" font-size="9" font-weight="700">
+        <!-- Major operations cities -->
+        <g fill="#A8C4E1">
+          <circle cx="200" cy="270" r="3" fill="#FFB347"/><text x="208" y="273">Medan</text>
+          <circle cx="178" cy="252" r="3" fill="#FF4757"/><text x="186" y="255">Dumai</text>
+          <circle cx="350" cy="402" r="3" fill="#FF4757"/><text x="358" y="405">Plaju</text>
+          <circle cx="290" cy="445" r="3" fill="#FFB347"/><text x="298" y="448">Palembang</text>
+          <circle cx="320" cy="380" r="3" fill="#FFB347"/><text x="328" y="383">Pekanbaru</text>
+          <circle cx="220" cy="350" r="3" fill="#FFB347"/><text x="228" y="353">Padang</text>
+          <circle cx="590" cy="575" r="3" fill="#FFB347"/><text x="598" y="578">Jakarta</text>
+          <circle cx="660" cy="572" r="3" fill="#FF4757"/><text x="668" y="575">Balongan</text>
+          <circle cx="700" cy="572" r="3" fill="#FF4757"/><text x="708" y="567">Cilacap</text>
+          <circle cx="820" cy="580" r="3" fill="#FFB347"/><text x="828" y="583">Surabaya</text>
+          <circle cx="950" cy="572" r="3" fill="#FFB347"/><text x="958" y="575">Banyuwangi</text>
+          <circle cx="1040" cy="595" r="2.5" fill="#FFB347"/><text x="1048" y="598">Denpasar</text>
+          <circle cx="903" cy="378" r="3" fill="#FF4757"/><text x="911" y="381">Balikpapan</text>
+          <circle cx="780" cy="430" r="2.5" fill="#FFB347"/><text x="788" y="433">Banjarmasin</text>
+          <circle cx="650" cy="320" r="2.5" fill="#FFB347"/><text x="658" y="323">Pontianak</text>
+          <circle cx="1050" cy="380" r="2.5" fill="#FFB347"/><text x="1058" y="383">Makassar</text>
+          <circle cx="1085" cy="320" r="2.5" fill="#FFB347"/><text x="1093" y="323">Manado</text>
+          <circle cx="1320" cy="402" r="3" fill="#FF4757"/><text x="1328" y="405">Kasim</text>
+          <circle cx="1420" cy="430" r="2.5" fill="#FFB347"/><text x="1428" y="433">Jayapura</text>
+        </g>
+        <!-- Region labels (italic, faded) -->
+        <g fill="#3A5F90" font-style="italic" font-size="13" opacity="0.85">
+          <text x="180" y="160">SUMATRA</text>
+          <text x="700" y="640">JAVA</text>
+          <text x="730" y="385">KALIMANTAN</text>
+          <text x="1010" y="280">SULAWESI</text>
+          <text x="1370" y="345">PAPUA</text>
+          <text x="1230" y="640">NUSA TENGGARA</text>
+          <text x="1190" y="365">MALUKU</text>
+        </g>
+      </g>
+      ${content || ""}
+    </svg>
+  `;
+}
+function renderLocationMap(d, locations) {
+  if (!locations || !locations.length) return "";
+  const dots = locations.map((loc, i) => {
+    const colour = loc.crit ? "var(--red)" : loc.warn ? "var(--amber)" : "var(--accent)";
+    return `
+      <circle cx="${loc.x}" cy="${loc.y}" r="14" fill="${colour}" opacity="0.25" class="map-pulse"/>
+      <circle cx="${loc.x}" cy="${loc.y}" r="7" fill="${colour}" stroke="white" stroke-width="2"/>
+      <text x="${loc.x + 13}" y="${loc.y + 4}" font-size="11" fill="${colour}" font-weight="800" stroke="#06122A" stroke-width="3" paint-order="stroke">${i+1}</text>
+    `;
+  }).join("");
+  const lines = locations.length > 1 ? locations.slice(1).map((loc, i) => {
+    const prev = locations[i];
+    const colour = (loc.crit || prev.crit) ? "var(--red)" : (loc.warn || prev.warn) ? "var(--amber)" : "var(--accent)";
+    return `<line x1="${prev.x}" y1="${prev.y}" x2="${loc.x}" y2="${loc.y}" stroke="${colour}" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.7"/>`;
+  }).join("") : "";
+
+  return `
+    <div class="card" style="margin-top: 18px; margin-bottom:0;">
+      <div class="card-head"><h3>MOBILE LOCATION HISTORY · TODAY</h3><span class="tag">Intune managed-app location · 5 min polling</span></div>
+      <div class="card-body">
+        <div class="map-wrap">
+          ${indonesiaMapSVG(lines + dots)}
+        </div>
+        <table style="margin-top: 12px;">
+          <thead><tr><th>#</th><th>Time</th><th>Location</th><th>Duration</th><th>Status</th></tr></thead>
+          <tbody>
+            ${locations.map((loc, i) => `
+              <tr>
+                <td style="font-weight:700;">${i+1}</td>
+                <td>${loc.time}</td>
+                <td>${loc.label}</td>
+                <td style="font-size:11px; color: var(--text-muted);">${loc.duration}</td>
+                <td>${loc.crit ? `<span class="pill red">ANOMALY</span>` : loc.warn ? `<span class="pill amber">Off-pattern</span>` : `<span class="pill green">Expected</span>`}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+        <div style="margin-top: 10px; font-size: 11px; color: var(--text-muted);">
+          Mobile location is collected from the Intune-managed company mobile app only. UU PDP-compliant: only on company-issued device, only with signed acknowledgment, retention 90 days routine + 1 year if alert-related.
+        </div>
+      </div>
+    </div>
+  `;
+}
+function closeModal(e) {
+  if (e && e.target.id !== "device-modal") return;
+  document.getElementById("device-modal").classList.remove("show");
+}
+
+/* ----- Personnel ----- */
+function renderPersonnel() {
+  return `
+  <div class="page active">
+    <div class="page-head">
+      <div>
+        <div class="breadcrumb">Monitoring › Personnel</div>
+        <h2>Personnel · ${STAFF.length} staff</h2>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>STAFF WITH COMPANY-ISSUED DEVICES</h3><span class="tag">sorted by risk score</span></div>
+      <table>
+        <thead><tr><th></th><th>Name · NIK</th><th>Department · Role</th><th>Site</th><th>Devices</th><th>Risk score</th><th>Notes</th></tr></thead>
+        <tbody>
+          ${[...STAFF].sort((a,b)=>b.risk-a.risk).map(s => {
+            const devs = DEVICES.filter(d => d.owner === s.id);
+            return `
+              <tr>
+                <td><div class="staff-thumb">${s.name.split(' ').map(p=>p[0]).slice(0,2).join('')}</div></td>
+                <td><div style="font-weight:700;">${s.name}</div><div style="font-size:11px; color: var(--text-muted);">${s.nik}</div></td>
+                <td>${s.dept}<div style="font-size:11px; color: var(--text-muted);">${s.role}</div></td>
+                <td>${s.site}</td>
+                <td>${devs.length} (${devs.map(d=>d.type).join(", ")})</td>
+                <td>${riskBar(s.risk)}</td>
+                <td style="font-size:11px; color: ${s.note?'var(--red)':'var(--text-muted)'};">${s.note || "—"}</td>
+              </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+/* ----- Files ----- */
+function renderFiles() {
+  return `
+  <div class="page active">
+    <div class="page-head">
+      <div>
+        <div class="breadcrumb">Monitoring › File Activity</div>
+        <h2>File activity — last 24h · ${FILE_EVENTS.length} events</h2>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">Total events</div><div class="kpi-value">${FILE_EVENTS.length}</div><div class="kpi-sub">last 24h</div></div>
+      <div class="kpi red"><div class="kpi-label">Restricted moved</div><div class="kpi-value">${FILE_EVENTS.filter(f=>f.classif==='Restricted').length}</div><div class="kpi-sub">requires review</div></div>
+      <div class="kpi amber"><div class="kpi-label">External email</div><div class="kpi-value">${FILE_EVENTS.filter(f=>f.action==='Email external').length}</div><div class="kpi-sub">first-seen recipients flagged</div></div>
+      <div class="kpi"><div class="kpi-label">USB copy</div><div class="kpi-value">${FILE_EVENTS.filter(f=>f.action==='USB copy').length}</div><div class="kpi-sub">policy: log + alert</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>FILE FLOW · forensic search</h3><span class="tag">DLP + sensitivity labels</span></div>
+      <table>
+        <thead><tr><th>Time</th><th>Staff</th><th>Device</th><th>Action</th><th>File</th><th>Size</th><th>Classification</th><th>Risk</th></tr></thead>
+        <tbody>
+          ${FILE_EVENTS.map(f => {
+            const s = staffById(f.staff);
+            return `<tr>
+              <td>${f.time}</td>
+              <td>${s.name}<div style="font-size:11px; color: var(--text-muted);">${s.dept}</div></td>
+              <td style="font-family: monospace; font-size: 11px;">${f.device}</td>
+              <td>${f.action}</td>
+              <td style="font-size:11px;">${f.file}</td>
+              <td style="font-size:11px;">${f.size}</td>
+              <td><span class="pill ${f.classif==='Restricted'?'red':f.classif==='Confidential'?'amber':'blue'}">${f.classif}</span></td>
+              <td><span class="pill ${f.risk==='crit'?'red':f.risk==='warn'?'amber':'blue'}">${f.risk.toUpperCase()}</span></td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+/* ----- Mobile Locations overview ----- */
+function renderLocations() {
+  const mobiles = DEVICES.filter(d => d.type === "mobile");
+  return `
+  <div class="page active">
+    <div class="page-head">
+      <div>
+        <div class="breadcrumb">Monitoring › Mobile Locations</div>
+        <h2>Mobile fleet · ${mobiles.length} devices</h2>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>LIVE MOBILE LOCATIONS · INDONESIA</h3><span class="tag">click any device for full track</span></div>
+      <div class="card-body">
+        <div class="map-wrap">
+          ${indonesiaMapSVG(mobiles.map(m => {
+            const locs = MOBILE_LOCATIONS[m.id] || [];
+            const last = locs[locs.length - 1] || { x: 590, y: 575 };
+            const colour = last.crit ? "var(--red)" : last.warn ? "var(--amber)" : "var(--green)";
+            return `
+              <circle cx="${last.x}" cy="${last.y}" r="16" fill="${colour}" opacity="0.22" class="map-pulse"/>
+              <circle cx="${last.x}" cy="${last.y}" r="6" fill="${colour}" stroke="white" stroke-width="1.8"/>
+              <text x="${last.x + 11}" y="${last.y + 3}" font-size="10" fill="${colour}" font-weight="800" stroke="#06122A" stroke-width="2.5" paint-order="stroke">${staffById(m.owner).name.split(' ')[0]}</text>
+            `;
+          }).join(""))}
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>MOBILE FLEET TABLE</h3></div>
+      <table>
+        <thead><tr><th>Device</th><th>Owner</th><th>Department</th><th>Last seen</th><th>Last location</th><th>Status</th></tr></thead>
+        <tbody>
+          ${mobiles.map(m => {
+            const s = staffById(m.owner);
+            const locs = MOBILE_LOCATIONS[m.id] || [];
+            const last = locs[locs.length - 1] || {};
+            const isAnomaly = last.crit || last.warn;
+            return `<tr onclick="openDeviceModal('${m.id}')" style="cursor:pointer;">
+              <td style="font-family:monospace; font-weight:700; color:var(--accent);">${m.id}</td>
+              <td>${s.name}</td>
+              <td>${s.dept}</td>
+              <td style="font-size:11px;">${m.lastSeen}</td>
+              <td style="font-size:11px;">${last.label || m.site}</td>
+              <td>${last.crit ? `<span class="pill red">ANOMALY</span>` : last.warn ? `<span class="pill amber">Off-pattern</span>` : `<span class="pill green">Expected</span>`}</td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+/* ----- Risk ----- */
+function renderRisk() {
+  return `
+  <div class="page active">
+    <div class="page-head">
+      <div>
+        <div class="breadcrumb">Risk &amp; Security › Insider Risk</div>
+        <h2>Insider risk score · ${STAFF.length} users tracked</h2>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">Tracked users</div><div class="kpi-value">${STAFF.length}</div><div class="kpi-sub">all consented (UU PDP)</div></div>
+      <div class="kpi green"><div class="kpi-label">Low risk (&lt;20)</div><div class="kpi-value">${STAFF.filter(s=>s.risk<20).length}</div><div class="kpi-sub">routine monitoring</div></div>
+      <div class="kpi amber"><div class="kpi-label">Medium (20-49)</div><div class="kpi-value">${STAFF.filter(s=>s.risk>=20&&s.risk<50).length}</div><div class="kpi-sub">elevated review</div></div>
+      <div class="kpi red"><div class="kpi-label">High (≥50)</div><div class="kpi-value">${STAFF.filter(s=>s.risk>=50).length}</div><div class="kpi-sub">case opened</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>USERS BY RISK SCORE</h3><span class="tag">UEBA · last 30 days</span></div>
+      <table>
+        <thead><tr><th>Staff</th><th>Department</th><th>Risk</th><th>Drivers</th><th>Last anomaly</th></tr></thead>
+        <tbody>
+          ${[...STAFF].sort((a,b)=>b.risk-a.risk).map(s => `
+            <tr>
+              <td>${s.name}<div style="font-size:11px; color: var(--text-muted);">${s.nik}</div></td>
+              <td>${s.dept}</td>
+              <td>${riskBar(s.risk)}</td>
+              <td style="font-size:11px;">
+                ${s.risk >= 50 ? "Notice period · mass-download · external email · location anomaly" :
+                  s.risk >= 30 ? "Cloud uploads · risky-app installed" :
+                  s.risk >= 15 ? "Off-hours access · external email recipient" :
+                  "—"}
+              </td>
+              <td style="font-size:11px; color: var(--text-muted);">${s.risk >= 50 ? "today 14:31" : s.risk >= 30 ? "today 09:08" : s.risk >= 15 ? "this week" : "—"}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+/* ----- Alerts ----- */
+function renderAlerts() {
+  return `
+  <div class="page active">
+    <div class="page-head">
+      <div>
+        <div class="breadcrumb">Risk &amp; Security › Alerts</div>
+        <h2>Alerts · ${ALERTS.length} active</h2>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>ALL ACTIVE ALERTS</h3></div>
+      ${ALERTS.map(a => `
+        <div class="alert-row ${a.sev}">
+          <span></span>
+          <span class="sev">${a.sev === "crit" ? "CRIT" : "WARN"} · ${a.time}</span>
+          <div class="body">
+            <div class="name">${a.asset}</div>
+            <div class="desc">${a.desc}</div>
+          </div>
+          <div class="actions"><a href="#">Acknowledge</a> · <a href="#">Investigate →</a></div>
+        </div>`).join("")}
+    </div>
+  </div>`;
+}
+
+/* ----- Compliance ----- */
+function renderCompliance() {
+  return `
+  <div class="page active">
+    <div class="page-head">
+      <div>
+        <div class="breadcrumb">Audit › Compliance</div>
+        <h2>Compliance &amp; UU PDP audit</h2>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi green"><div class="kpi-label">Acknowledgments signed</div><div class="kpi-value">100%</div><div class="kpi-sub">${STAFF.length} of ${STAFF.length} staff</div></div>
+      <div class="kpi green"><div class="kpi-label">Policy version</div><div class="kpi-value">v3.2</div><div class="kpi-sub">effective 2026-01-01</div></div>
+      <div class="kpi green"><div class="kpi-label">Retention compliance</div><div class="kpi-value">100%</div><div class="kpi-sub">90d routine, 1y incident</div></div>
+      <div class="kpi"><div class="kpi-label">Open data-subject requests</div><div class="kpi-value">2</div><div class="kpi-sub">UU PDP rights</div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>UU PDP CONTROLS</h3><span class="tag">UU 27/2022</span></div>
+      <div class="card-body">
+        <div class="compliance-grid">
+          <div class="compliance-cell"><span class="lbl">Purpose limitation</span><span class="val green">Documented</span></div>
+          <div class="compliance-cell"><span class="lbl">Data minimisation</span><span class="val green">Active</span></div>
+          <div class="compliance-cell"><span class="lbl">Retention enforced</span><span class="val green">Active</span></div>
+          <div class="compliance-cell"><span class="lbl">Role-based access</span><span class="val green">Active</span></div>
+          <div class="compliance-cell"><span class="lbl">Watcher logging</span><span class="val green">Active</span></div>
+          <div class="compliance-cell"><span class="lbl">DPIA on file</span><span class="val green">Yes (v3.2)</span></div>
+          <div class="compliance-cell"><span class="lbl">DPO designated</span><span class="val green">Putri Cahyani</span></div>
+          <div class="compliance-cell"><span class="lbl">Personal-bubble respected</span><span class="val green">~/Personal/ excluded</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>DATA SUBJECT REQUESTS (UU PDP rights)</h3></div>
+      <table>
+        <thead><tr><th>Case</th><th>Staff</th><th>Type</th><th>Opened</th><th>SLA</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>DSR-2026-0017</td><td>Joko Wibowo</td><td>Right of access</td><td>2026-04-30</td><td>5 days remaining</td><td><span class="pill amber">In progress</span></td></tr>
+          <tr><td>DSR-2026-0018</td><td>(former staff)</td><td>Right of erasure (post-resignation)</td><td>2026-05-01</td><td>9 days remaining</td><td><span class="pill blue">Awaiting Legal</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>`;
+}
+
+/* ----- Audit / Watcher Log ----- */
+function renderAudit() {
+  return `
+  <div class="page active">
+    <div class="page-head">
+      <div>
+        <div class="breadcrumb">Audit › Watcher Log</div>
+        <h2>Watcher log — who looked at whom</h2>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>RECENT ACCESS TO STAFF RECORDS</h3><span class="tag">tamper-evident, hash-chained</span></div>
+      <table>
+        <thead><tr><th>Time</th><th>Watcher</th><th>Subject staff</th><th>Action</th><th>Justification / case</th></tr></thead>
+        <tbody>
+          <tr><td>14:31</td><td>Root Admin</td><td>EMP012 Lina Marlina</td><td>Open device record (PRT-LP-1012)</td><td>INV-2026-0432</td></tr>
+          <tr><td>14:18</td><td>Dewi Sartika (CDC)</td><td>EMP012 Lina Marlina</td><td>Investigation start</td><td>INV-2026-0432</td></tr>
+          <tr><td>13:42</td><td>Auto (UEBA)</td><td>EMP012 Lina Marlina</td><td>Risk score elevation 47→73</td><td>System</td></tr>
+          <tr><td>11:14</td><td>Putri Cahyani (DPO)</td><td>EMP007 Joko Wibowo</td><td>DSR-2026-0017 review</td><td>UU PDP right-of-access</td></tr>
+          <tr><td>09:08</td><td>Auto (UEBA)</td><td>EMP008 Maya Lestari</td><td>Sign-in anomaly flag</td><td>System</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size: 11px; color: var(--text-muted); padding: 12px; background: var(--panel); border-radius: 4px; margin-top: 14px;">
+      Every record above is hash-chained and anchored daily to a public timestamp service. Watcher access is reviewed monthly by the DPO (Putri Cahyani). Per UU PDP Art. 28, data subjects may request a copy of the watcher log entries pertaining to their own records.
+    </div>
+  </div>`;
+}
+
+/* ================================================================================
+   SESSION RECORDINGS  (Teramind-style)
+================================================================================ */
+const SESSIONS = [
+  { id: "REC-2026-0432-A", staff: "EMP012", device: "PRT-LP-1012", trigger: "USB copy of Restricted file",
+    time: "14:31", duration: "2m 14s", case: "INV-2026-0432", flags: ["USB", "Restricted", "Pre-event 30s captured"],
+    keywords: ["vendor list", "Q1-2026", "RESTRICTED label seen on screen"], thumbnail: "spreadsheet" },
+  { id: "REC-2026-0432-B", staff: "EMP012", device: "PRT-LP-1012", trigger: "External email with Restricted attachment",
+    time: "14:18", duration: "3m 42s", case: "INV-2026-0432", flags: ["Email-external", "Restricted", "First-seen recipient"],
+    keywords: ["bidder-x@gmail.com", "Tender bid", "subject: 'as discussed'"], thumbnail: "email" },
+  { id: "REC-2026-0432-C", staff: "EMP012", device: "PRT-LP-1012", trigger: "Mass download from SAP",
+    time: "13:42", duration: "23m 08s", case: "INV-2026-0432", flags: ["Mass-download", "SAP MM", "847 files"],
+    keywords: ["SAP MM transaction ME23N", "vendor master export", "automated script suspected"], thumbnail: "sap" },
+  { id: "REC-2026-0418-A", staff: "EMP007", device: "PRT-LP-1007", trigger: "TeamViewer install attempt",
+    time: "14:11", duration: "1m 47s", case: "INV-2026-0418", flags: ["Risky-app", "Auto-quarantined"],
+    keywords: ["TeamViewer.msi", "installer launched", "MFA elevated denied"], thumbnail: "installer" },
+  { id: "REC-2026-0395-A", staff: "EMP003", device: "PRT-LP-1003", trigger: "External email recipient first-seen",
+    time: "13:18", duration: "1m 12s", case: "INV-2026-0395", flags: ["Email-external", "First-seen recipient"],
+    keywords: ["unknown-shipper@protonmail.com", "vessel-schedule-Q2.xlsx attached"], thumbnail: "email" },
+];
+
+const VIOLATIONS = [
+  { staff: "EMP012", total: 12, breakdown: { confidential_shared: 3, restricted_shared: 2, mass_download: 1, off_hours: 4, risky_app: 0, location_anomaly: 2 },
+    status: "Active investigation", case: "INV-2026-0432", trajectory: [8, 9, 12, 14, 18, 22, 28, 35, 42, 47, 55, 62, 68, 73] },
+  { staff: "EMP007", total: 5, breakdown: { confidential_shared: 1, restricted_shared: 0, mass_download: 0, off_hours: 1, risky_app: 1, location_anomaly: 2 },
+    status: "Under monitoring", case: "INV-2026-0418", trajectory: [8, 12, 18, 25, 32, 38, 41, 44, 45, 47, 47, 47, 47, 47] },
+  { staff: "EMP003", total: 4, breakdown: { confidential_shared: 1, restricted_shared: 0, mass_download: 0, off_hours: 2, risky_app: 0, location_anomaly: 1 },
+    status: "Under monitoring", case: "INV-2026-0395", trajectory: [10, 14, 18, 22, 25, 28, 30, 31, 31, 31, 31, 31, 31, 31] },
+  { staff: "EMP004", total: 2, breakdown: { confidential_shared: 0, restricted_shared: 0, mass_download: 0, off_hours: 1, risky_app: 0, location_anomaly: 1 },
+    status: "Routine", case: "—", trajectory: [12, 14, 16, 17, 17, 17, 17, 18, 18, 18, 18, 18, 18, 18] },
+  { staff: "EMP009", total: 1, breakdown: { confidential_shared: 0, restricted_shared: 0, mass_download: 0, off_hours: 1, risky_app: 0, location_anomaly: 0 },
+    status: "Routine", case: "—", trajectory: [10, 11, 12, 13, 13, 13, 13, 14, 14, 14, 14, 14, 14, 14] },
+];
+
+function renderSessions() {
+  return `
+  <div class="page active">
+    <div class="page-head">
+      <div>
+        <div class="breadcrumb">Forensics › Session Recordings</div>
+        <h2>Event-triggered session recordings · ${SESSIONS.length} clips</h2>
+      </div>
+    </div>
+    <div style="background: var(--warn-bg); border: 1px solid var(--amber); border-radius: 4px; padding: 12px 16px; margin-bottom: 18px; font-size: 12px; color: var(--text-dim);">
+      <strong style="color: var(--amber);">▲ Privacy notice:</strong> Recording is only triggered by a CRITICAL alert and captures 30 s before + the event + up to 5 min after. Continuous recording is OFF for all staff. Each clip is watermarked with case ID + watcher identity. Retention 1 year for incident-related; auto-delete after that. Compliant with UU PDP Art. 22 (no automated decision-making without human review).
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>RECENT RECORDINGS</h3><span class="tag">Teramind-class · event-triggered only</span></div>
+      <table>
+        <thead><tr><th>Clip ID</th><th>When</th><th>Staff · Device</th><th>Trigger</th><th>Duration</th><th>Flags</th><th>Case</th><th></th></tr></thead>
+        <tbody>
+          ${SESSIONS.map(s => {
+            const st = staffById(s.staff);
+            return `<tr onclick="openSessionPlayer('${s.id}')" style="cursor:pointer;">
+              <td style="font-family:monospace; color:var(--accent); font-weight:700;">${s.id}</td>
+              <td>${s.time}</td>
+              <td>${st.name}<div style="font-size:11px; color:var(--text-muted); font-family:monospace;">${s.device}</div></td>
+              <td>${s.trigger}</td>
+              <td>${s.duration}</td>
+              <td>${s.flags.map(f => `<span class="pill ${f.includes('Restricted')||f.includes('Mass')?'red':f.includes('USB')||f.includes('Email')||f.includes('Risky')?'amber':'blue'}" style="margin-right:3px;">${f}</span>`).join("")}</td>
+              <td><span class="pill blue">${s.case}</span></td>
+              <td><span style="color: var(--accent); font-weight:700;">▶ Play</span></td>
+            </tr>`;
+          }).join("")}
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>RECORDING POLICY</h3></div>
+      <div class="card-body" style="font-size:13px;">
+        <div class="compliance-grid">
+          <div class="compliance-cell"><span class="lbl">Trigger</span><span class="val green">Critical alert only</span></div>
+          <div class="compliance-cell"><span class="lbl">Pre-event capture</span><span class="val green">30 seconds</span></div>
+          <div class="compliance-cell"><span class="lbl">Post-event capture</span><span class="val green">up to 5 min</span></div>
+          <div class="compliance-cell"><span class="lbl">Continuous recording</span><span class="val red">DISABLED</span></div>
+          <div class="compliance-cell"><span class="lbl">OCR text-search</span><span class="val green">enabled</span></div>
+          <div class="compliance-cell"><span class="lbl">Watermark</span><span class="val green">case-ID + watcher</span></div>
+          <div class="compliance-cell"><span class="lbl">Retention</span><span class="val green">1 yr if incident-related</span></div>
+          <div class="compliance-cell"><span class="lbl">Subject access</span><span class="val green">UU PDP enabled</span></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function openSessionPlayer(sessionId) {
+  const s = SESSIONS.find(x => x.id === sessionId);
+  if (!s) return;
+  const st = staffById(s.staff);
+  document.getElementById("modal-title").innerHTML = `▶ Session replay · ${s.id}`;
+  document.getElementById("modal-body").innerHTML = `
+    <div style="background: #000; border-radius: 6px; overflow: hidden; margin-bottom: 14px; position: relative;">
+      <!-- Mock screen-recording frame -->
+      <svg viewBox="0 0 1000 560" style="width:100%; display:block;">
+        <rect width="1000" height="560" fill="#0A0A0A"/>
+        <!-- Fake desktop screen -->
+        <rect x="20" y="20" width="960" height="520" fill="#1E1E1E" rx="3"/>
+        <!-- Title bar -->
+        <rect x="20" y="20" width="960" height="30" fill="#2D2D2D" rx="3"/>
+        <circle cx="40" cy="35" r="5" fill="#FF5F56"/>
+        <circle cx="58" cy="35" r="5" fill="#FFBD2E"/>
+        <circle cx="76" cy="35" r="5" fill="#27C93F"/>
+        <text x="500" y="40" font-size="11" fill="#999" text-anchor="middle">${s.thumbnail === 'email' ? 'Outlook — New Message' : s.thumbnail === 'sap' ? 'SAP GUI — ME23N' : s.thumbnail === 'installer' ? 'Setup — TeamViewer.msi' : 'Excel — Q1-2026 vendor list.xlsx'}</text>
+        ${s.thumbnail === 'spreadsheet' ? `
+          <rect x="40" y="60" width="920" height="20" fill="#383838"/>
+          <text x="50" y="74" font-size="9" fill="#CCC" font-family="monospace">File   Edit   View   Insert   Format   Tools   Data   Window   Help</text>
+          <rect x="40" y="85" width="920" height="14" fill="#1E7A4F"/>
+          <text x="50" y="95" font-size="9" fill="#FFF" font-family="monospace">SENSITIVITY: RESTRICTED — Pertamina internal use only — Q1-2026 vendor list</text>
+          <g font-family="monospace" font-size="9" fill="#DDD">
+            <text x="50" y="118">    A                    B                    C              D            E</text>
+            <text x="50" y="135">  1 Vendor                Code                 Category       Q1-Spend     Notes</text>
+            <text x="50" y="152">  2 PT Inti Karya         VND-00412            Logistics      Rp 4.2 B    awarded</text>
+            <text x="50" y="169">  3 PT Sumber Daya        VND-00518            Equipment      Rp 8.1 B    awarded</text>
+            <text x="50" y="186">  4 PT Mitra Energi       VND-00623            Engineering    Rp 6.4 B    pending</text>
+            <text x="50" y="203">  5 PT Garda Nusa         VND-00734            Security       Rp 1.8 B    pending</text>
+            <text x="50" y="220">  6 ... (837 more rows)</text>
+          </g>
+          <rect x="40" y="240" width="920" height="40" fill="#3A2A0A" stroke="#FFB347" stroke-width="1"/>
+          <text x="50" y="262" font-size="11" fill="#FFB347" font-family="monospace">⚠ DLP Event captured at 14:31:12 — File copied to USB drive (E:\\ — Kingston DataTraveler 64GB)</text>
+          <text x="50" y="275" font-size="10" fill="#FFB347" font-family="monospace">Sensitivity = Restricted · 3,243 rows · 412 KB · Auto-recording started 30s pre-event</text>
+        ` : s.thumbnail === 'email' ? `
+          <rect x="40" y="60" width="920" height="20" fill="#383838"/>
+          <text x="50" y="74" font-size="9" fill="#CCC" font-family="monospace">From: lina.marlina@pertamina.co.id   To: bidder-x@gmail.com</text>
+          <text x="50" y="95" font-size="11" fill="#FFF" font-family="monospace">Subject: as discussed</text>
+          <text x="50" y="125" font-size="10" fill="#DDD" font-family="monospace">Attachments:</text>
+          <rect x="50" y="135" width="280" height="40" fill="#2D2D2D" stroke="#FFB347"/>
+          <text x="60" y="158" font-size="11" fill="#FFB347" font-family="monospace">📎 Tender bid Pertamina-2026-Q2.pdf</text>
+          <text x="60" y="170" font-size="9" fill="#999" font-family="monospace">8.1 MB · Sensitivity: RESTRICTED</text>
+          <text x="50" y="200" font-size="11" fill="#DDD" font-family="monospace">Hi, here is what we talked about. As you suggested,</text>
+          <text x="50" y="216" font-size="11" fill="#DDD" font-family="monospace">I have attached the latest version. Please use the figure</text>
+          <text x="50" y="232" font-size="11" fill="#DDD" font-family="monospace">on page 14 — that is our reserve number.</text>
+          <text x="50" y="262" font-size="11" fill="#DDD" font-family="monospace">— L</text>
+          <rect x="40" y="290" width="920" height="40" fill="#3A0A0A" stroke="#FF4757" stroke-width="1.5"/>
+          <text x="50" y="312" font-size="11" fill="#FF4757" font-family="monospace">⛔ DLP CRITICAL — External recipient first-seen + Restricted attachment + suspicious phrasing</text>
+          <text x="50" y="325" font-size="10" fill="#FF4757" font-family="monospace">Send was BLOCKED · sender notified · case INV-2026-0432 opened · forensic capture saved</text>
+        ` : s.thumbnail === 'sap' ? `
+          <rect x="40" y="60" width="920" height="20" fill="#0066CC"/>
+          <text x="50" y="74" font-size="9" fill="#FFF" font-family="monospace">SAP Easy Access — ME23N — Display Purchase Order — User: lina.marlina</text>
+          <g font-family="monospace" font-size="9" fill="#CCC">
+            <text x="50" y="105">Transaction:  ME23N (Display PO)</text>
+            <text x="50" y="120">Filter: vendor master + 2025-Q1 + 2025-Q2 + 2026-Q1 (3-year window)</text>
+            <text x="50" y="140">Result set:  847 documents · 412 MB · exporting to local file</text>
+            <text x="50" y="165">[Export]  [Save as XLSX]  ............. EXPORTING ............</text>
+          </g>
+          <rect x="40" y="190" width="920" height="160" fill="#2A2A2A"/>
+          <g font-family="monospace" font-size="8" fill="#999">
+            <text x="50" y="208">Saving: vendor-master-2024-2026.xlsx     (chunk 1 of 12)</text>
+            <text x="50" y="220">Saving: vendor-pricing-Q1-2026.xlsx       (chunk 2 of 12)</text>
+            <text x="50" y="232">Saving: tender-history-2024-2026.xlsx     (chunk 3 of 12)</text>
+            <text x="50" y="244">Saving: hps-baseline-2024-2026.xlsx       (chunk 4 of 12)</text>
+            <text x="50" y="256">...</text>
+            <text x="50" y="268" fill="#CCC">Total: 847 files exported in 23 minutes</text>
+          </g>
+          <rect x="40" y="370" width="920" height="40" fill="#3A0A0A" stroke="#FF4757" stroke-width="1.5"/>
+          <text x="50" y="392" font-size="11" fill="#FF4757" font-family="monospace">⚠ UEBA — User 7-day baseline = 12 files/day · current = 847 files / 23 min</text>
+          <text x="50" y="405" font-size="10" fill="#FF4757" font-family="monospace">Mass-download anomaly · staff in notice period · case INV-2026-0432 opened</text>
+        ` : `
+          <rect x="40" y="60" width="920" height="40" fill="#383838"/>
+          <text x="500" y="84" font-size="14" fill="#FFB347" text-anchor="middle">⚠ Setup attempting to install: TeamViewer.msi</text>
+          <rect x="240" y="200" width="520" height="160" fill="#2D2D2D" stroke="#888"/>
+          <text x="500" y="240" font-size="14" fill="#CCC" text-anchor="middle" font-family="monospace">User Account Control</text>
+          <text x="500" y="270" font-size="11" fill="#CCC" text-anchor="middle">Do you want to allow this app to make changes?</text>
+          <rect x="320" y="295" width="160" height="40" fill="#FF4757"/>
+          <text x="400" y="320" font-size="12" fill="#FFF" text-anchor="middle" font-weight="700">QUARANTINED</text>
+          <text x="500" y="380" font-size="10" fill="#999" text-anchor="middle" font-family="monospace">CrowdStrike Falcon: TeamViewer not in approved-app list · staff notified</text>
+        `}
+        <!-- Watermark overlay (bottom-right) -->
+        <rect x="700" y="510" width="280" height="26" fill="#06122A" opacity="0.85" stroke="var(--accent)" stroke-width="1"/>
+        <text x="710" y="527" font-size="10" fill="#9DBCD4" font-family="monospace">${s.case} · watcher: Root Admin · ${s.time}</text>
+      </svg>
+      <!-- Player controls -->
+      <div style="background: #1A1A1A; padding: 10px 14px; display: flex; align-items: center; gap: 12px;">
+        <button class="btn-primary" style="width:auto; padding:6px 14px; background: var(--accent); font-size: 12px;">▶ Play</button>
+        <div style="flex:1; height: 4px; background: #333; border-radius: 2px; position: relative;">
+          <div style="width: 24%; height: 100%; background: var(--red); border-radius: 2px;"></div>
+          <div style="position: absolute; left: 24%; top: -3px; width: 10px; height: 10px; background: var(--accent); border-radius: 50%;"></div>
+        </div>
+        <span style="font-size: 11px; color: var(--text-muted); font-family: monospace;">00:32 / ${s.duration}</span>
+      </div>
+    </div>
+
+    <div class="split">
+      <div class="card" style="margin:0;">
+        <div class="card-head"><h3>OCR-EXTRACTED KEYWORDS</h3><span class="tag">searchable · evidence</span></div>
+        <div class="card-body" style="font-size:12px;">
+          ${s.keywords.map(k => `<div style="margin-bottom:8px;"><span class="pill amber">match</span> ${k}</div>`).join("")}
+          <div style="font-size: 10px; color: var(--text-muted); margin-top: 8px;">OCR runs after recording. Operators can search "vendor list" or "@gmail.com" across all retained recordings; results return to the relevant clip and timestamp.</div>
+        </div>
+      </div>
+      <div class="card" style="margin:0;">
+        <div class="card-head"><h3>EVIDENCE PACKAGE</h3></div>
+        <div class="card-body" style="font-size:12px;">
+          <div class="detail-item"><span class="label">Clip ID</span><span class="value" style="font-family:monospace;">${s.id}</span></div>
+          <div class="detail-item"><span class="label">Staff · Device</span><span class="value">${st.name} · ${s.device}</span></div>
+          <div class="detail-item"><span class="label">Triggered by</span><span class="value">${s.trigger}</span></div>
+          <div class="detail-item"><span class="label">Watermark / chain-of-custody</span><span class="value" style="color: var(--green); font-size: 11px;">SHA-256 hash anchored in audit ledger ✓</span></div>
+          <div class="detail-item"><span class="label">Case</span><span class="value">${s.case}</span></div>
+          <div class="detail-item"><span class="label">Retention until</span><span class="value">2027-05-08 · then auto-delete</span></div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById("device-modal").classList.add("show");
+}
+
+/* ================================================================================
+   STAFF VIOLATION PROFILES (Teramind-style insider risk profile)
+================================================================================ */
+function renderViolations() {
+  return `
+  <div class="page active">
+    <div class="page-head">
+      <div>
+        <div class="breadcrumb">Forensics › Staff Violation Profiles</div>
+        <h2>Violation profiles · ${VIOLATIONS.length} staff with at least 1 flagged event</h2>
+      </div>
+    </div>
+    <div class="kpi-grid">
+      <div class="kpi red"><div class="kpi-label">Active investigation</div><div class="kpi-value">${VIOLATIONS.filter(v=>v.status==='Active investigation').length}</div><div class="kpi-sub">case opened</div></div>
+      <div class="kpi amber"><div class="kpi-label">Under monitoring</div><div class="kpi-value">${VIOLATIONS.filter(v=>v.status==='Under monitoring').length}</div><div class="kpi-sub">heightened review</div></div>
+      <div class="kpi"><div class="kpi-label">Routine</div><div class="kpi-value">${VIOLATIONS.filter(v=>v.status==='Routine').length}</div><div class="kpi-sub">low-impact flags</div></div>
+      <div class="kpi green"><div class="kpi-label">Cleared this month</div><div class="kpi-value">7</div><div class="kpi-sub">case closed, no action</div></div>
+    </div>
+    ${VIOLATIONS.map(v => {
+      const s = staffById(v.staff);
+      return `
+      <div class="card">
+        <div class="card-head">
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <div class="staff-thumb">${s.name.split(' ').map(p=>p[0]).slice(0,2).join('')}</div>
+            <div>
+              <h3>${s.name} · ${s.dept}</h3>
+              <div style="font-size:11px; color: var(--text-muted); margin-top: 2px;">${s.nik} · ${s.role} · ${s.site}</div>
+            </div>
+          </div>
+          <span class="pill ${v.status==='Active investigation'?'red':v.status==='Under monitoring'?'amber':'blue'}">${v.status}</span>
+        </div>
+        <div class="card-body">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 18px;">
+            <div>
+              <div style="font-size: 12px; font-weight: 800; color: var(--accent); margin-bottom: 10px;">VIOLATION COUNTS · LAST 30 DAYS</div>
+              <table style="font-size: 12px;">
+                <tbody>
+                  <tr><td>Confidential documents shared externally</td><td style="text-align:right; font-weight:700; color: ${v.breakdown.confidential_shared > 0 ? 'var(--amber)' : 'var(--text-muted)'};">${v.breakdown.confidential_shared}</td></tr>
+                  <tr><td>Restricted documents shared</td><td style="text-align:right; font-weight:700; color: ${v.breakdown.restricted_shared > 0 ? 'var(--red)' : 'var(--text-muted)'};">${v.breakdown.restricted_shared}</td></tr>
+                  <tr><td>Mass-download events</td><td style="text-align:right; font-weight:700; color: ${v.breakdown.mass_download > 0 ? 'var(--red)' : 'var(--text-muted)'};">${v.breakdown.mass_download}</td></tr>
+                  <tr><td>Off-hours sensitive-system access</td><td style="text-align:right; font-weight:700; color: ${v.breakdown.off_hours > 1 ? 'var(--amber)' : 'var(--text-muted)'};">${v.breakdown.off_hours}</td></tr>
+                  <tr><td>Risky-app installations</td><td style="text-align:right; font-weight:700; color: ${v.breakdown.risky_app > 0 ? 'var(--amber)' : 'var(--text-muted)'};">${v.breakdown.risky_app}</td></tr>
+                  <tr><td>Mobile-location anomalies</td><td style="text-align:right; font-weight:700; color: ${v.breakdown.location_anomaly > 0 ? 'var(--amber)' : 'var(--text-muted)'};">${v.breakdown.location_anomaly}</td></tr>
+                  <tr style="border-top: 2px solid var(--panel-line);"><td style="font-weight:800; padding-top: 10px;">Total flagged events</td><td style="text-align:right; font-weight:900; padding-top: 10px; color: ${v.total > 8 ? 'var(--red)' : v.total > 3 ? 'var(--amber)' : 'var(--text-muted)'}; font-size: 14px;">${v.total}</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <div style="font-size: 12px; font-weight: 800; color: var(--accent); margin-bottom: 10px;">RISK TRAJECTORY · LAST 14 DAYS</div>
+              <svg viewBox="0 0 400 100" style="width: 100%; background: var(--panel-2); border-radius: 4px;">
+                <line x1="0" y1="50" x2="400" y2="50" stroke="var(--amber)" stroke-width="0.5" stroke-dasharray="3,3" opacity="0.5"/>
+                <text x="395" y="46" text-anchor="end" font-size="8" fill="var(--amber)">threshold 50</text>
+                <polyline points="${v.trajectory.map((val, i) => `${(i / (v.trajectory.length-1)) * 380 + 10},${100 - (val * 90 / 100)}`).join(' ')}"
+                  fill="none" stroke="${v.trajectory[v.trajectory.length-1] >= 50 ? 'var(--red)' : v.trajectory[v.trajectory.length-1] >= 20 ? 'var(--amber)' : 'var(--green)'}" stroke-width="2"/>
+                <circle cx="${380 + 10}" cy="${100 - (v.trajectory[v.trajectory.length-1] * 90 / 100)}" r="4" fill="${v.trajectory[v.trajectory.length-1] >= 50 ? 'var(--red)' : v.trajectory[v.trajectory.length-1] >= 20 ? 'var(--amber)' : 'var(--green)'}"/>
+              </svg>
+              <div style="margin-top: 12px; font-size: 11px; color: var(--text-dim);">
+                Current: <strong style="color: ${s.risk >= 50 ? 'var(--red)' : s.risk >= 20 ? 'var(--amber)' : 'var(--green)'};">${s.risk}/100</strong> ·
+                Case: <strong>${v.case}</strong>
+              </div>
+              ${s.note ? `<div style="margin-top: 8px; font-size: 11px; color: var(--red);">⚠ HR flag: ${s.note}</div>` : ""}
+              <div style="margin-top: 14px; display: flex; gap: 8px;">
+                <button class="btn-primary" style="background: var(--accent); padding: 6px 12px; width: auto; font-size: 11px;">View session recordings</button>
+                <button class="btn-primary" style="background: var(--amber); padding: 6px 12px; width: auto; font-size: 11px;">Notify HR + Legal</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      `;
+    }).join("")}
+  </div>`;
+}
+
+/* ================================================================================
+   BOOT
+================================================================================ */
+// Auto-fill demo creds if URL hash says so (handy for screenshots)
+if (location.hash === "#demo") {
+  document.getElementById("login-user").value = "admin@pertamina.co.id";
+  document.getElementById("login-pass").value = "pertamina-2026";
+}
+</script>
+</body>
+</html>

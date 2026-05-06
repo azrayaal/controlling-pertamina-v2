@@ -7,8 +7,10 @@ import {
   Settings,
   LogOut,
   ChevronDown,
+  ShieldCheck,
 } from "lucide-react";
 import { useState } from "react";
+import type { LucideIcon } from "lucide-react";
 
 interface SubItem {
   label: string;
@@ -18,8 +20,13 @@ interface SubItem {
 
 interface NavItem {
   label: string;
+  /** Path to a PNG/image in /public. Set to "" when using lucideIcon. */
   icon: string;
   href: string;
+  /** If true, opens in a new browser tab (external page). */
+  external?: boolean;
+  /** Lucide icon component — used instead of `icon` when provided. */
+  lucideIcon?: LucideIcon;
   subItems?: SubItem[];
 }
 
@@ -70,6 +77,13 @@ const navItems: NavItem[] = [
     icon: "/analyhtic_report.png",
     href: "/analytics",
   },
+  {
+    label: "Security",
+    icon: "",
+    lucideIcon: ShieldCheck,
+    href: "/security/dashboard.html",
+    external: true,
+  }
 ];
 
 interface SidebarProps {
@@ -201,6 +215,47 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
                       </>
                     )}
                   </button>
+                ) : item.external ? (
+                  /* External link — opens in a new tab */
+                  <a
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={collapsed ? item.label : undefined}
+                    onClick={onMobileClose}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all duration-150 hover:bg-slate-100`}
+                  >
+                    <div className="w-[18px] h-[18px] flex-shrink-0 flex items-center justify-center">
+                      {item.lucideIcon ? (
+                        <item.lucideIcon
+                          size={17}
+                          className="text-slate-500"
+                          style={{ flexShrink: 0 }}
+                        />
+                      ) : (
+                        <div className="relative w-full h-full">
+                          <Image
+                            src={item.icon}
+                            alt={item.label}
+                            fill
+                            sizes="18px"
+                            className="object-contain"
+                            style={{ filter: "brightness(0) saturate(0) opacity(0.65)" }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {!collapsed && (
+                      <span className="text-[13px] leading-tight whitespace-nowrap font-medium text-slate-700 flex-1">
+                        {item.label}
+                      </span>
+                    )}
+                    {!collapsed && (
+                      <svg viewBox="0 0 12 12" width="10" height="10" className="text-slate-400 flex-shrink-0">
+                        <path d="M2 2h8v8M10 2 2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
+                      </svg>
+                    )}
+                  </a>
                 ) : (
                   <Link
                     href={item.href}
