@@ -627,6 +627,7 @@ export default function ProductionPage() {
                   lng: b.lng,
                   label: b.name,
                   status: b.status,
+                  category: "Upstream" as const,
                 }))}
                 selectedId={selectedBlock.id}
                 stats={[

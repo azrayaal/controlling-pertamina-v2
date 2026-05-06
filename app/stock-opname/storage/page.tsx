@@ -330,6 +330,7 @@ export default function StoragePage() {
                   lng: t.lng,
                   label: t.name,
                   status: t.status,
+                  category: (t.type === "Depot" ? "Depot" : "Storage") as import("@/components/dashboard/LocationMap").LocationCategory,
                 }))}
                 selectedId={selectedTerminal.id}
                 stats={[

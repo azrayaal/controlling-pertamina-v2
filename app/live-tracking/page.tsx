@@ -5,8 +5,8 @@ import { vessels, trucks } from "@/lib/mockData";
 import {
   Search, Ship, Truck, MessageSquare, Phone, Video,
   X, Anchor, Camera, AlertTriangle, Filter, Layers,
-  Navigation, MapPin, Clock, Package, ChevronRight,
-  Activity, Zap,
+  Navigation, MapPin, Clock, Package, ChevronRight, ChevronDown,
+  Activity, Zap, User, Fuel,
 } from "lucide-react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -667,11 +667,20 @@ function TruckMapPopup({
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 export default function LiveTrackingPage() {
-  const [activeTab, setActiveTab]   = useState<ActiveTab>("all");
-  const [mapType, setMapType]       = useState<MapType>("street");
-  const [searchQ, setSearchQ]       = useState("");
-  const [selected, setSelected]     = useState<SelectedItem>(null);
-  const [showDetail, setShowDetail] = useState(false);
+  const [activeTab, setActiveTab]     = useState<ActiveTab>("all");
+  const [mapType, setMapType]         = useState<MapType>("street");
+  const [searchQ, setSearchQ]         = useState("");
+  const [selected, setSelected]       = useState<SelectedItem>(null);
+  const [showDetail, setShowDetail]   = useState(false);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRowExpand = useCallback((id: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
 
   const handleVesselClick = useCallback((id: string) => {
     setSelected((prev) => (prev?.type === "vessel" && prev.id === id ? null : { type: "vessel", id }));
@@ -803,12 +812,32 @@ export default function LiveTrackingPage() {
             mapType={mapType}
             activeFilter={activeTab}
             height="100%"
+            showInfra={false}
           />
 
           {/* Map overlays */}
           <div className="absolute bottom-10 left-3 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-1.5 shadow-sm border border-white/50 flex items-center gap-1.5 text-xs text-slate-500 pointer-events-none z-[400]">
             <MapPin size={11} className="text-slate-400" />
             <span>Indonesia · Pertamina Live Tracker</span>
+          </div>
+
+          {/* Fleet legend */}
+          <div className="absolute bottom-10 right-3 z-[400] bg-white/92 backdrop-blur-sm rounded-xl px-3 py-2 shadow-md border border-white/50">
+            <p className="text-[8px] text-slate-400 uppercase font-bold tracking-wider mb-1.5">Armada</p>
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="w-4 h-px flex-shrink-0" style={{ borderTop: "2px dashed #1e2d4d" }} />
+              <span className="text-[9px] text-slate-600 font-medium">Kapal</span>
+            </div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span className="w-4 h-px flex-shrink-0" style={{ borderTop: "2px dashed #e63946" }} />
+              <span className="text-[9px] text-slate-600 font-medium">Truk</span>
+            </div>
+            <div className="border-t border-slate-100 pt-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="w-4 h-px flex-shrink-0" style={{ borderTop: "2px dashed #ef4444" }} />
+                <span className="text-[9px] text-red-500 font-medium">Alert / Anomali</span>
+              </div>
+            </div>
           </div>
 
           {/* Live badge — only when no detail panel is open */}
@@ -844,23 +873,23 @@ export default function LiveTrackingPage() {
         </div>
 
         {/* ── Active Fleet Table ────────────────────────────────────────────── */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 flex-shrink-0">
-          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+        <div className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex-shrink-0">
+          <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-700">
             <div className="flex items-center gap-2">
               <Activity size={16} className="text-blue-500" />
-              <h2 className="text-sm font-bold text-slate-800">Active Fleet</h2>
+              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100">Active Fleet</h2>
             </div>
-            <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+            <span className="text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full">
               {fleetRows.length} Unit
             </span>
           </div>
 
-          <div className="overflow-x-auto max-h-[280px] overflow-y-auto">
-            <table className="w-full min-w-[620px] text-xs">
-              <thead className="sticky top-0 bg-white border-b border-slate-100 z-10">
+          <div className="overflow-x-auto max-h-[320px] overflow-y-auto">
+            <table className="w-full min-w-[640px] text-xs">
+              <thead className="sticky top-0 bg-white dark:bg-[#1e293b] border-b border-slate-100 dark:border-slate-700 z-10">
                 <tr>
-                  {["ID / TIPE", "ROUTE", "STATUS", "ETA", "LOAD"].map((h) => (
-                    <th key={h} className="text-left px-5 py-2 text-[9px] font-bold text-slate-400 tracking-widest uppercase">
+                  {["", "ID / TIPE", "ROUTE", "STATUS", "ETA", "LOAD"].map((h) => (
+                    <th key={h} className="text-left px-4 py-2 text-[9px] font-bold text-slate-400 dark:text-slate-500 tracking-widest uppercase">
                       {h}
                     </th>
                   ))}
@@ -870,69 +899,204 @@ export default function LiveTrackingPage() {
                 {fleetRows.map(({ type, v, t }) => {
                   if (type === "vessel" && v) {
                     const { label, style } = trackingStatusLabel(v);
-                    const isActive = selectedVesselId === v.id;
+                    const isActive   = selectedVesselId === v.id;
+                    const isExpanded = expandedRows.has(v.id);
                     return (
-                      <tr
-                        key={v.id}
-                        onClick={() => handleVesselClick(v.id)}
-                        className={`border-b border-slate-50 cursor-pointer transition-colors ${isActive ? "bg-blue-50" : "hover:bg-slate-50"}`}
-                      >
-                        <td className="px-5 py-2.5">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-[#1e2d4d]/10 flex items-center justify-center flex-shrink-0">
-                              <Ship size={13} className="text-[#1e2d4d]" />
+                      <React.Fragment key={v.id}>
+                        <tr
+                          onClick={() => handleVesselClick(v.id)}
+                          className={`border-b border-slate-50 dark:border-slate-700/60 cursor-pointer transition-colors ${
+                            isActive
+                              ? "bg-blue-50 dark:bg-blue-900/20"
+                              : "hover:bg-slate-50 dark:hover:bg-slate-700/40"
+                          }`}
+                        >
+                          {/* Expand toggle */}
+                          <td className="pl-3 pr-1 py-2.5 w-6">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleRowExpand(v.id); }}
+                              className="w-5 h-5 rounded flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            >
+                              <ChevronDown size={11} className={`text-slate-400 dark:text-slate-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                            </button>
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-[#1e2d4d]/10 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                                <Ship size={13} className="text-[#1e2d4d] dark:text-blue-400" />
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-800 dark:text-slate-100">{v.name}</p>
+                                <p className="text-[9px] text-slate-400 dark:text-slate-500">{v.idCode} · <span className={`text-[8px] font-semibold px-1 py-0.5 rounded ${VESSEL_TYPE_BADGE[v.type] ?? ""}`}>{v.type}</span></p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-bold text-slate-800">{v.name}</p>
-                              <p className="text-[9px] text-slate-400">{v.idCode} · <span className={`text-[8px] font-semibold px-1 py-0.5 rounded ${VESSEL_TYPE_BADGE[v.type] ?? ""}`}>{v.type}</span></p>
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                              <span className="font-semibold">{v.port}</span>
+                              <ChevronRight size={10} className="text-slate-300 dark:text-slate-600" />
+                              <span className="font-semibold">{v.destPort}</span>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-5 py-2.5">
-                          <div className="flex items-center gap-1 text-slate-600">
-                            <span className="font-semibold">{v.port}</span>
-                            <ChevronRight size={10} className="text-slate-300" />
-                            <span className="font-semibold">{v.destPort}</span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-2.5">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>{label}</span>
-                        </td>
-                        <td className="px-5 py-2.5 font-semibold text-slate-700">{v.eta}</td>
-                        <td className="px-5 py-2.5 font-semibold text-slate-700">{v.cargoVolume}</td>
-                      </tr>
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>{label}</span>
+                          </td>
+                          <td className="px-4 py-2.5 font-semibold text-slate-700 dark:text-slate-300">{v.eta}</td>
+                          <td className="px-4 py-2.5 font-semibold text-slate-700 dark:text-slate-300">{v.cargoVolume}</td>
+                        </tr>
+                        {/* Expandable detail row */}
+                        {isExpanded && (
+                          <tr className="border-b border-slate-100 dark:border-slate-700">
+                            <td />
+                            <td colSpan={5} className="px-4 py-3 bg-slate-50 dark:bg-slate-800/60">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                                <div className="flex items-center gap-2">
+                                  <User size={11} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-[9px] text-slate-400 dark:text-slate-500">Kapten</p>
+                                    <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">{v.captain}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Navigation size={11} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-[9px] text-slate-400 dark:text-slate-500">Kecepatan / Heading</p>
+                                    <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">{v.speed} · {v.heading}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Package size={11} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-[9px] text-slate-400 dark:text-slate-500">Jarak / Waktu</p>
+                                    <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">{v.totalDistance} · {v.transitTime}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Anchor size={11} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-[9px] text-slate-400 dark:text-slate-500">IMO / MMSI</p>
+                                    <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">{v.imo} / {v.mmsi}</p>
+                                  </div>
+                                </div>
+                              </div>
+                              {v.cargoBreakdown && v.cargoBreakdown.length > 0 && (
+                                <div>
+                                  <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider mb-1.5">Muatan Kargo</p>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {v.cargoBreakdown.map((cb) => (
+                                      <span key={cb.type}
+                                        className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
+                                        <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: cb.color }} />
+                                        {cb.type}: {cb.amount}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     );
                   } else if (type === "truck" && t) {
                     const { label, style } = truckStatusLabel(t);
-                    const isActive = selectedTruckId === t.id;
+                    const isActive   = selectedTruckId === t.id;
+                    const isExpanded = expandedRows.has(t.id);
                     return (
-                      <tr
-                        key={t.id}
-                        onClick={() => handleTruckClick(t.id)}
-                        className={`border-b border-slate-50 cursor-pointer transition-colors ${isActive ? "bg-red-50" : "hover:bg-slate-50"}`}
-                      >
-                        <td className="px-5 py-2.5">
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center flex-shrink-0">
-                              <Truck size={13} className="text-red-500" />
+                      <React.Fragment key={t.id}>
+                        <tr
+                          onClick={() => handleTruckClick(t.id)}
+                          className={`border-b border-slate-50 dark:border-slate-700/60 cursor-pointer transition-colors ${
+                            isActive
+                              ? "bg-red-50 dark:bg-red-900/20"
+                              : "hover:bg-slate-50 dark:hover:bg-slate-700/40"
+                          }`}
+                        >
+                          {/* Expand toggle */}
+                          <td className="pl-3 pr-1 py-2.5 w-6">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); toggleRowExpand(t.id); }}
+                              className="w-5 h-5 rounded flex items-center justify-center hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                            >
+                              <ChevronDown size={11} className={`text-slate-400 dark:text-slate-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
+                            </button>
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-red-50 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                                <Truck size={13} className="text-red-500 dark:text-red-400" />
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-800 dark:text-slate-100">{t.plateNumber}</p>
+                                <p className="text-[9px] text-slate-400 dark:text-slate-500">{t.idCode} · {t.driver}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-bold text-slate-800">{t.plateNumber}</p>
-                              <p className="text-[9px] text-slate-400">{t.idCode} · {t.driver}</p>
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <div className="flex items-center gap-1 text-slate-600 dark:text-slate-300">
+                              <span className="font-semibold truncate max-w-[140px]">{t.tableRoute}</span>
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-5 py-2.5">
-                          <div className="flex items-center gap-1 text-slate-600">
-                            <span className="font-semibold truncate max-w-[140px]">{t.tableRoute}</span>
-                          </div>
-                        </td>
-                        <td className="px-5 py-2.5">
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>{label}</span>
-                        </td>
-                        <td className="px-5 py-2.5 font-semibold text-slate-700">{t.eta}</td>
-                        <td className="px-5 py-2.5 font-semibold text-slate-700">{t.load}</td>
-                      </tr>
+                          </td>
+                          <td className="px-4 py-2.5">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${style.bg} ${style.text}`}>{label}</span>
+                          </td>
+                          <td className="px-4 py-2.5 font-semibold text-slate-700 dark:text-slate-300">{t.eta}</td>
+                          <td className="px-4 py-2.5 font-semibold text-slate-700 dark:text-slate-300">{t.load}</td>
+                        </tr>
+                        {/* Expandable detail row */}
+                        {isExpanded && (
+                          <tr className="border-b border-slate-100 dark:border-slate-700">
+                            <td />
+                            <td colSpan={5} className="px-4 py-3 bg-slate-50 dark:bg-slate-800/60">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                                <div className="flex items-center gap-2">
+                                  <User size={11} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-[9px] text-slate-400 dark:text-slate-500">Driver</p>
+                                    <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">{t.driver}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <MapPin size={11} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-[9px] text-slate-400 dark:text-slate-500">Rute</p>
+                                    <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200 truncate max-w-[120px]">{t.origin} → {t.destination}</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Navigation size={11} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-[9px] text-slate-400 dark:text-slate-500">Jarak / Durasi</p>
+                                    <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">{t.distance} · {t.duration} jam</p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Clock size={11} className="text-slate-400 dark:text-slate-500 flex-shrink-0" />
+                                  <div>
+                                    <p className="text-[9px] text-slate-400 dark:text-slate-500">ETA / Rating</p>
+                                    <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">{t.eta} · ⭐ {t.rating}</p>
+                                  </div>
+                                </div>
+                              </div>
+                              {t.fuelLoad && t.fuelLoad.length > 0 && (
+                                <div>
+                                  <p className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                    <Fuel size={9} />Muatan BBM
+                                  </p>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {t.fuelLoad.map((fl) => (
+                                      <span key={fl.type}
+                                        className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200">
+                                        {fl.type}: {fl.amount}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     );
                   }
                   return null;

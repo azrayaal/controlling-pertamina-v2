@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import type { LucideIcon } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
 
 interface SubItem {
   label: string;
@@ -92,26 +93,34 @@ interface SidebarProps {
 
 export default function Sidebar({ onMobileClose }: SidebarProps) {
   const pathname = usePathname();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const [collapsed, setCollapsed] = useState(false);
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>(() => {
-    // Auto-open the submenu whose route matches the current path on first render
     const initial: Record<string, boolean> = {};
-    // pathname is stable at init time via closure captured in the factory fn
     return initial;
   });
 
-  // Auto-open the correct submenu when the path changes (e.g. on first load or navigation)
-  // We derive the open state from the pathname so it's always correct
+  // Icon filter helpers
+  const activeIconFilter = "brightness(0) invert(1)";
+  const inactiveIconFilter = isDark
+    ? "brightness(0) invert(1) opacity(0.6)"
+    : "brightness(0) saturate(0) opacity(0.65)";
+  const subActiveIconFilter = isDark
+    ? "brightness(0) invert(1) opacity(0.9)"
+    : "brightness(0) saturate(100%) invert(13%) sepia(60%) saturate(500%) hue-rotate(200deg)";
+  const subInactiveIconFilter = isDark
+    ? "brightness(0) invert(1) opacity(0.4)"
+    : "brightness(0) saturate(0) opacity(0.5)";
+
   const activeParent = navItems.find(
     (item) => item.subItems && pathname.startsWith(item.href)
   )?.href ?? null;
 
   const toggleMenu = (href: string) => {
-    // Accordion behaviour: close every other submenu, toggle only the clicked one
     setOpenMenus((prev) => ({ [href]: !prev[href] }));
   };
 
-  // A submenu is open if it was explicitly opened OR if it is the active parent route
   const isMenuOpen = (href: string) =>
     openMenus[href] !== undefined ? openMenus[href] : href === activeParent;
 
@@ -119,12 +128,12 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
     <div className="flex flex-col gap-3 min-h-screen">
       {/* Main Sidebar */}
       <aside
-        className={`ml-0 mt-0 md:ml-[19px] md:mt-[27px] min-h-[calc(100vh-20vh)] bg-white rounded-xl relative flex flex-col transition-all duration-300  border-r border-slate-200 ${
+        className={`ml-0 mt-0 md:ml-[19px] md:mt-[27px] min-h-[calc(100vh-20vh)] bg-white dark:bg-[#1e293b] rounded-xl relative flex flex-col transition-all duration-300 border-r border-slate-200 dark:border-slate-700 ${
           collapsed ? "w-16" : "w-[210px]"
         }`}
       >
         {/* Logo */}
-        <div className="flex items-center justify-center px-3 py-4 border-b border-slate-100 min-h-[64px]">
+        <div className="flex items-center justify-center px-3 py-4 border-b border-slate-100 dark:border-slate-700 min-h-[64px]">
           {collapsed ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
@@ -137,7 +146,7 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
             <img
               src="/icon_logo.png"
               alt="Pertamina Oil Monitoring"
-              className="w-full max-w-[172px] h-auto object-contain block"
+              className="w-full max-w-[172px] h-auto object-contain block dark:brightness-0 dark:invert"
             />
           )}
         </div>
@@ -151,13 +160,13 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
             <img
             src="/menu_open.png"
             alt="menu"
-            className="h-full object-contain"
+            className="h-full object-contain dark:invert"
           />
           ) : (
             <img
             src="/menu_close.png"
             alt="menu"
-            className="h-full object-contain"
+            className="h-full object-contain dark:invert"
           />
           )}
         </button>
@@ -180,7 +189,7 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all duration-150 ${
                       active
                         ? "bg-[#1e2d4d] shadow-sm"
-                        : "hover:bg-slate-100"
+                        : "hover:bg-slate-100 dark:hover:bg-slate-700"
                     }`}
                   >
                     <div className="relative w-[18px] h-[18px] flex-shrink-0">
@@ -190,18 +199,14 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
                         fill
                         sizes="18px"
                         className="object-contain"
-                        style={{
-                          filter: active
-                            ? "brightness(0) invert(1)"
-                            : "brightness(0) saturate(0) opacity(0.65)",
-                        }}
+                        style={{ filter: active ? activeIconFilter : inactiveIconFilter }}
                       />
                     </div>
                     {!collapsed && (
                       <>
                         <span
                           className={`flex-1 text-left text-[13px] leading-tight whitespace-nowrap font-medium ${
-                            active ? "text-white" : "text-slate-700"
+                            active ? "text-white" : "text-slate-700 dark:text-slate-300"
                           }`}
                         >
                           {item.label}
@@ -209,27 +214,26 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
                         <ChevronDown
                           size={13}
                           className={`flex-shrink-0 transition-transform duration-200 ${
-                            active ? "text-white" : "text-slate-400"
+                            active ? "text-white" : "text-slate-400 dark:text-slate-500"
                           } ${isOpen ? "rotate-180" : ""}`}
                         />
                       </>
                     )}
                   </button>
                 ) : item.external ? (
-                  /* External link — opens in a new tab */
                   <a
                     href={item.href}
                     target="_blank"
                     rel="noopener noreferrer"
                     title={collapsed ? item.label : undefined}
                     onClick={onMobileClose}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all duration-150 hover:bg-slate-100`}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all duration-150 hover:bg-slate-100 dark:hover:bg-slate-700`}
                   >
                     <div className="w-[18px] h-[18px] flex-shrink-0 flex items-center justify-center">
                       {item.lucideIcon ? (
                         <item.lucideIcon
                           size={17}
-                          className="text-slate-500"
+                          className="text-slate-500 dark:text-slate-400"
                           style={{ flexShrink: 0 }}
                         />
                       ) : (
@@ -240,18 +244,18 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
                             fill
                             sizes="18px"
                             className="object-contain"
-                            style={{ filter: "brightness(0) saturate(0) opacity(0.65)" }}
+                            style={{ filter: inactiveIconFilter }}
                           />
                         </div>
                       )}
                     </div>
                     {!collapsed && (
-                      <span className="text-[13px] leading-tight whitespace-nowrap font-medium text-slate-700 flex-1">
+                      <span className="text-[13px] leading-tight whitespace-nowrap font-medium text-slate-700 dark:text-slate-300 flex-1">
                         {item.label}
                       </span>
                     )}
                     {!collapsed && (
-                      <svg viewBox="0 0 12 12" width="10" height="10" className="text-slate-400 flex-shrink-0">
+                      <svg viewBox="0 0 12 12" width="10" height="10" className="text-slate-400 dark:text-slate-500 flex-shrink-0">
                         <path d="M2 2h8v8M10 2 2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" fill="none"/>
                       </svg>
                     )}
@@ -264,7 +268,7 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-all duration-150 ${
                       active
                         ? "bg-[#1e2d4d] shadow-sm"
-                        : "hover:bg-slate-100"
+                        : "hover:bg-slate-100 dark:hover:bg-slate-700"
                     }`}
                   >
                     <div className="relative w-[18px] h-[18px] flex-shrink-0">
@@ -274,17 +278,13 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
                         fill
                         sizes="18px"
                         className="object-contain"
-                        style={{
-                          filter: active
-                            ? "brightness(0) invert(1)"
-                            : "brightness(0) saturate(0) opacity(0.65)",
-                        }}
+                        style={{ filter: active ? activeIconFilter : inactiveIconFilter }}
                       />
                     </div>
                     {!collapsed && (
                       <span
                         className={`text-[13px] leading-tight whitespace-nowrap font-medium ${
-                          active ? "text-white" : "text-slate-700"
+                          active ? "text-white" : "text-slate-700 dark:text-slate-300"
                         }`}
                       >
                         {item.label}
@@ -295,7 +295,7 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
 
                 {/* Submenu */}
                 {hasSubItems && isOpen && !collapsed && (
-                  <div className="ml-2 mb-1 pl-3 border-l border-slate-200">
+                  <div className="ml-2 mb-1 pl-3 border-l border-slate-200 dark:border-slate-700">
                     {item.subItems!.map((sub) => {
                       const subActive = pathname === sub.href || pathname.startsWith(sub.href + "/");
                       return (
@@ -305,8 +305,8 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
                           onClick={onMobileClose}
                           className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg mb-0.5 transition-all duration-150 ${
                             subActive
-                              ? "bg-[#EEEDFA] text-[#1e2d4d]"
-                              : "hover:bg-slate-50 text-slate-500"
+                              ? "bg-[#EEEDFA] dark:bg-[#1e3a5f] text-[#1e2d4d] dark:text-blue-300"
+                              : "hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
                           }`}
                         >
                           <div className="relative w-[14px] h-[14px] flex-shrink-0">
@@ -317,15 +317,13 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
                               sizes="14px"
                               className="object-contain"
                               style={{
-                                filter: subActive
-                                  ? "brightness(0) saturate(100%) invert(13%) sepia(60%) saturate(500%) hue-rotate(200deg)"
-                                  : "brightness(0) saturate(0) opacity(0.5)",
+                                filter: subActive ? subActiveIconFilter : subInactiveIconFilter,
                               }}
                             />
                           </div>
                           <span
                             className={`text-[12px] leading-tight whitespace-nowrap font-medium ${
-                              subActive ? "text-[#1e2d4d]" : "text-slate-500"
+                              subActive ? "text-[#1e2d4d] dark:text-blue-300" : "text-slate-500 dark:text-slate-400"
                             }`}
                           >
                             {sub.label}
@@ -341,53 +339,23 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
         </nav>
       </aside>
 
-      {/* Modules & Bottom */}
+      {/* Bottom */}
       <div
-        className={`ml-0 md:ml-[19px] rounded-xl bg-white  transition-all duration-300 ${
+        className={`ml-0 md:ml-[19px] rounded-xl bg-white dark:bg-[#1e293b] transition-all duration-300 ${
           collapsed ? "w-16" : "w-[210px]"
         }`}
       >
-        {/* Sub Modules */}
-        {/* {!collapsed && (
-          <div className="px-2 pt-3 pb-2">
-            <p className="px-2 mb-2 text-[9px] uppercase tracking-widest text-slate-400 font-semibold">
-              Modules
-            </p>
-
-            {subModules.map((module) => {
-              const active = pathname === module.href;
-
-              return (
-                <Link
-                  key={module.href}
-                  href={module.href}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg mb-1 transition-colors ${
-                    active
-                      ? "bg-[#1e2d4d] text-white font-semibold"
-                      : "text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-                  }`}
-                >
-                  <Layers size={13} className="flex-shrink-0" />
-                  <span className="text-xs">{module.label}</span>
-                </Link>
-              );
-            })}
-          </div>
-        )} */}
-
-     {/* Bottom */}
-        <div className="border-t border-slate-100 py-2 px-2">
+        <div className="border-t border-slate-100 dark:border-slate-700 py-2 px-2">
           <Link
             href="/settings"
             title={collapsed ? "Settings" : undefined}
-            className={`flex items-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors ${
+            className={`flex items-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors ${
               collapsed
                 ? "justify-center px-2 py-3"
                 : "gap-3 px-3 py-2"
             }`}
           >
             <Settings size={17} className="flex-shrink-0" />
-
             {!collapsed && (
               <span className="text-[13px]">Settings</span>
             )}
@@ -395,14 +363,13 @@ export default function Sidebar({ onMobileClose }: SidebarProps) {
 
           <button
             title={collapsed ? "Log Out" : undefined}
-            className={`w-full flex items-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors ${
+            className={`w-full flex items-center rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors ${
               collapsed
                 ? "justify-center px-2 py-3"
                 : "gap-3 px-3 py-2"
             }`}
           >
             <LogOut size={17} className="flex-shrink-0" />
-
             {!collapsed && (
               <span className="text-[13px]">Log Out</span>
             )}

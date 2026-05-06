@@ -299,13 +299,21 @@ export default function RefineryPage() {
                 </span>
               </div>
               <LocationMap
-                locations={refineries.map((r) => ({
-                  id: r.id,
-                  lat: r.lat,
-                  lng: r.lng,
-                  label: r.name,
-                  status: r.status,
-                }))}
+                locations={[
+                  // Kilang locations
+                  ...refineries.map((r) => ({
+                    id: r.id,
+                    lat: r.lat,
+                    lng: r.lng,
+                    label: r.name,
+                    status: r.status,
+                    category: "Kilang" as const,
+                  })),
+                  // Upstream supply points shown for context
+                  { id: 101, lat: 0.88, lng: 101.38, label: "Blok Rokan (Upstream)", status: "Active", category: "Upstream" as const },
+                  { id: 102, lat: -7.15, lng: 111.58, label: "Blok Cepu (Upstream)", status: "Active", category: "Upstream" as const },
+                  { id: 103, lat: -0.30, lng: 117.40, label: "Blok Mahakam (Upstream)", status: "Active", category: "Upstream" as const },
+                ]}
                 selectedId={selectedRefinery.id}
                 stats={[
                   { label: "Kapasitas", value: `${(selectedRefinery.cap / 1000).toFixed(0)}K BPD` },

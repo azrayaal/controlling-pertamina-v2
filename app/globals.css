@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Configure dark mode via .dark class on <html> */
+@custom-variant dark (&:is(.dark *));
+
 :root {
   --background: #ECECEC;
   --foreground: #1e293b;
@@ -8,6 +11,41 @@
   --primary: #0d6efd;
   --pertamina-red: #e63946;
   --pertamina-blue: #0d2137;
+
+  /* Card / surface colors */
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --card-hover: #f8fafc;
+
+  /* Text colors */
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+
+  /* Input / form */
+  --input-bg: #f8fafc;
+  --input-border: #e2e8f0;
+
+  /* Base font size — slightly larger for elder-friendly readability */
+  font-size: 16px;
+}
+
+.dark {
+  --background: #0f172a;
+  --foreground: #e2e8f0;
+  --sidebar-bg: #020617;
+  --sidebar-active: #1e3a5f;
+
+  --card-bg: #1e293b;
+  --card-border: #334155;
+  --card-hover: #263044;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+
+  --input-bg: #1e293b;
+  --input-border: #334155;
 }
 
 @theme inline {
@@ -21,9 +59,133 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: 'Inter', Arial, Helvetica, sans-serif;
+  font-size: 1rem;
+  line-height: 1.6;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Custom scrollbar */
+/* ── Dark mode bulk overrides ──────────────────────────────────────── */
+
+/* Cards / panels */
+.dark .bg-white {
+  background-color: #1e293b !important;
+}
+.dark .bg-slate-50 {
+  background-color: #162032 !important;
+}
+.dark .bg-slate-100 {
+  background-color: #1a2744 !important;
+}
+.dark .bg-slate-200 {
+  background-color: #1e3251 !important;
+}
+
+/* Borders */
+.dark .border-slate-100 {
+  border-color: #334155 !important;
+}
+.dark .border-slate-200 {
+  border-color: #3f4e63 !important;
+}
+.dark .border-b.border-slate-100,
+.dark .border-t.border-slate-100 {
+  border-color: #334155 !important;
+}
+
+/* Text */
+.dark .text-slate-800 {
+  color: #f1f5f9 !important;
+}
+.dark .text-slate-700 {
+  color: #e2e8f0 !important;
+}
+.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+.dark .text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Hover states */
+.dark .hover\:bg-slate-50:hover {
+  background-color: #263044 !important;
+}
+.dark .hover\:bg-slate-100:hover {
+  background-color: #2d3f55 !important;
+}
+.dark .hover\:bg-slate-200:hover {
+  background-color: #354b63 !important;
+}
+
+/* Colored light bg boxes — tint them in dark mode */
+.dark .bg-blue-50 {
+  background-color: rgba(59,130,246,0.15) !important;
+}
+.dark .bg-emerald-50 {
+  background-color: rgba(34,197,94,0.15) !important;
+}
+.dark .bg-green-50 {
+  background-color: rgba(34,197,94,0.15) !important;
+}
+.dark .bg-orange-50 {
+  background-color: rgba(249,115,22,0.15) !important;
+}
+.dark .bg-red-50 {
+  background-color: rgba(239,68,68,0.15) !important;
+}
+.dark .bg-amber-50 {
+  background-color: rgba(245,158,11,0.15) !important;
+}
+.dark .bg-purple-50 {
+  background-color: rgba(168,85,247,0.15) !important;
+}
+.dark .bg-yellow-50 {
+  background-color: rgba(234,179,8,0.15) !important;
+}
+.dark .bg-cyan-50 {
+  background-color: rgba(6,182,212,0.15) !important;
+}
+
+/* Badge text colors in dark need slight adjustments */
+.dark .bg-blue-50.text-blue-700 {
+  color: #93c5fd !important;
+}
+.dark .bg-emerald-50.text-emerald-700,
+.dark .bg-green-50.text-green-700 {
+  color: #6ee7b7 !important;
+}
+
+/* Input / select elements */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border-color: #334155;
+}
+
+/* Header specific */
+.dark header.bg-white,
+.dark header {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+}
+
+/* Scrollbar — dark */
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Custom scrollbar (light) */
 ::-webkit-scrollbar {
   width: 4px;
   height: 4px;
@@ -53,4 +215,8 @@ body {
   background: linear-gradient(135deg, #b8d4e8 0%, #7fb3d3 30%, #5a9fc0 60%, #3d8aab 100%);
   position: relative;
   overflow: hidden;
+}
+
+.dark .map-placeholder {
+  background: linear-gradient(135deg, #1a3a5c 0%, #1e4a72 30%, #224f7a 60%, #1a3a5c 100%);
 }

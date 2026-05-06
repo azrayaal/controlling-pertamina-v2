@@ -20,27 +20,34 @@ const statCards = [
   { label: "Vessel Transit", value: "3", sub: "in pelabuhan / transit", change: "1 tiba hari ini", positive: true, icon: Ship, color: "teal" },
 ];
 
-// All logistics assets on the map — trucks, vessels, pipeline stations
+// All logistics assets on the map — trucks, vessels, pipeline stations, SPBU, terminals
 const logisticsLocations = [
-  // Trucks (active)
-  { id: 1, name: "T-461 — Jakarta Utara", status: "Active", lat: -6.11, lng: 106.87 },
-  { id: 2, name: "T-462 — Semarang", status: "Active", lat: -6.97, lng: 110.42 },
-  { id: 3, name: "T-442 — Surabaya", status: "Maintenance", lat: -7.25, lng: 112.75 },
-  { id: 4, name: "T-443 — Bandung", status: "Active", lat: -6.92, lng: 107.60 },
-  { id: 5, name: "T-471 — Medan", status: "Active", lat: 3.58, lng: 98.67 },
-  { id: 6, name: "T-482 — Makassar", status: "Active", lat: -5.13, lng: 119.43 },
-  { id: 7, name: "T-501 — Pekanbaru", status: "Active", lat: 0.51, lng: 101.44 },
-  { id: 8, name: "T-512 — Palembang", status: "Active", lat: -2.92, lng: 104.75 },
+  // Trucks (active) — generic pin (no category)
+  { id: 1, name: "T-461 — Jakarta Utara", status: "Active", lat: -6.11, lng: 106.87, category: undefined as import("@/components/dashboard/LocationMap").LocationCategory | undefined },
+  { id: 2, name: "T-462 — Semarang", status: "Active", lat: -6.97, lng: 110.42, category: undefined as import("@/components/dashboard/LocationMap").LocationCategory | undefined },
+  { id: 3, name: "T-442 — Surabaya", status: "Maintenance", lat: -7.25, lng: 112.75, category: undefined as import("@/components/dashboard/LocationMap").LocationCategory | undefined },
+  { id: 4, name: "T-443 — Bandung", status: "Active", lat: -6.92, lng: 107.60, category: undefined as import("@/components/dashboard/LocationMap").LocationCategory | undefined },
+  { id: 5, name: "T-471 — Medan", status: "Active", lat: 3.58, lng: 98.67, category: undefined as import("@/components/dashboard/LocationMap").LocationCategory | undefined },
+  { id: 6, name: "T-482 — Makassar", status: "Active", lat: -5.13, lng: 119.43, category: undefined as import("@/components/dashboard/LocationMap").LocationCategory | undefined },
+  { id: 7, name: "T-501 — Pekanbaru", status: "Active", lat: 0.51, lng: 101.44, category: undefined as import("@/components/dashboard/LocationMap").LocationCategory | undefined },
+  { id: 8, name: "T-512 — Palembang", status: "Active", lat: -2.92, lng: 104.75, category: undefined as import("@/components/dashboard/LocationMap").LocationCategory | undefined },
   // Vessels
-  { id: 9, name: "V-443 MT Petra 1 — Selat Malaka", status: "Active", lat: 2.0, lng: 102.5 },
-  { id: 10, name: "V-492 MT Petra 2 — Laut Jawa", status: "Active", lat: -5.0, lng: 110.5 },
-  { id: 11, name: "V-551 MT Rinjani — Selat Makassar", status: "Active", lat: -2.0, lng: 118.0 },
-  // Pipeline stations
-  { id: 12, name: "P-483 Pipeline A — Cilacap", status: "Active", lat: -7.73, lng: 109.00 },
-  { id: 13, name: "P-562 Pipeline B — Balongan", status: "Maintenance", lat: -6.46, lng: 108.34 },
-  { id: 14, name: "P-601 Pipeline C — Dumai", status: "Active", lat: 1.67, lng: 101.43 },
-  { id: 15, name: "P-720 Pipeline D — Plaju", status: "Active", lat: -2.97, lng: 104.76 },
-  { id: 16, name: "P-831 Pipeline E — Balikpapan", status: "Active", lat: -1.27, lng: 116.83 },
+  { id: 9, name: "V-443 MT Petra 1 — Selat Malaka", status: "Active", lat: 2.0, lng: 102.5, category: undefined as import("@/components/dashboard/LocationMap").LocationCategory | undefined },
+  { id: 10, name: "V-492 MT Petra 2 — Laut Jawa", status: "Active", lat: -5.0, lng: 110.5, category: undefined as import("@/components/dashboard/LocationMap").LocationCategory | undefined },
+  { id: 11, name: "V-551 MT Rinjani — Selat Makassar", status: "Active", lat: -2.0, lng: 118.0, category: undefined as import("@/components/dashboard/LocationMap").LocationCategory | undefined },
+  // Terminal pinpoints
+  { id: 12, name: "Terminal Plumpang", status: "Active", lat: -6.115, lng: 106.882, category: "Terminal" as import("@/components/dashboard/LocationMap").LocationCategory },
+  { id: 13, name: "Terminal Tg. Gerem", status: "Active", lat: -5.97, lng: 106.05, category: "Terminal" as import("@/components/dashboard/LocationMap").LocationCategory },
+  { id: 14, name: "Terminal Dumai", status: "Active", lat: 1.67, lng: 101.43, category: "Terminal" as import("@/components/dashboard/LocationMap").LocationCategory },
+  { id: 15, name: "Terminal Surabaya", status: "Active", lat: -7.2, lng: 112.73, category: "Terminal" as import("@/components/dashboard/LocationMap").LocationCategory },
+  { id: 16, name: "Terminal Makassar", status: "Active", lat: -5.13, lng: 119.43, category: "Terminal" as import("@/components/dashboard/LocationMap").LocationCategory },
+  // SPBU pinpoints
+  { id: 21, name: "SPBU 31.401 — Jakarta Pusat", status: "Active", lat: -6.2088, lng: 106.8456, category: "SPBU" as import("@/components/dashboard/LocationMap").LocationCategory },
+  { id: 22, name: "SPBU 44.501 — Semarang", status: "Active", lat: -6.99, lng: 110.40, category: "SPBU" as import("@/components/dashboard/LocationMap").LocationCategory },
+  { id: 23, name: "SPBU 54.601 — Surabaya", status: "Active", lat: -7.27, lng: 112.73, category: "SPBU" as import("@/components/dashboard/LocationMap").LocationCategory },
+  { id: 24, name: "SPBU 14.201 — Medan", status: "Active", lat: 3.60, lng: 98.68, category: "SPBU" as import("@/components/dashboard/LocationMap").LocationCategory },
+  { id: 25, name: "SPBU 74.901 — Makassar", status: "Active", lat: -5.16, lng: 119.45, category: "SPBU" as import("@/components/dashboard/LocationMap").LocationCategory },
+  { id: 26, name: "SPBU 34.302 — Bandung", status: "Active", lat: -6.94, lng: 107.62, category: "SPBU" as import("@/components/dashboard/LocationMap").LocationCategory },
 ];
 
 const truckFeeds = [
@@ -244,7 +251,7 @@ export default function LogisticsPage() {
               </div>
             </div>
             <LocationMap
-              locations={logisticsLocations.map((l) => ({ id: l.id, lat: l.lat, lng: l.lng, label: l.name, status: l.status }))}
+              locations={logisticsLocations.map((l) => ({ id: l.id, lat: l.lat, lng: l.lng, label: l.name, status: l.status, category: l.category }))}
               selectedId={selectedId}
               height="328px"
             />

@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+
+export type LocationCategory = "Upstream" | "Kilang" | "Storage" | "Terminal" | "SPBU" | "Depot";
 
 export interface MapLocation {
   id: number;
@@ -8,6 +10,7 @@ export interface MapLocation {
   lng: number;
   label: string;
   status?: string;
+  category?: LocationCategory;
 }
 
 interface StatBadge {
@@ -23,6 +26,63 @@ interface LocationMapProps {
   className?: string;
 }
 
+// Pinpoint icon URLs per category
+const CATEGORY_PINPOINT: Record<LocationCategory, string> = {
+  Upstream: "/upstreamiconpinpoint.png",
+  Kilang:   "/kilangiconpinpoint.png",
+  Storage:  "/storageiconpinpoint.png",
+  Terminal: "/terminaliconpinpoint.png",
+  SPBU:     "/spbuiconpinpoint.png",
+  Depot:    "/storageiconpinpoint.png",
+};
+
+// Category accent colors for selection ring
+const CATEGORY_COLOR: Record<LocationCategory, string> = {
+  Upstream: "#3b82f6",
+  Kilang:   "#f97316",
+  Storage:  "#8b5cf6",
+  Terminal: "#14b8a6",
+  SPBU:     "#22c55e",
+  Depot:    "#8b5cf6",
+};
+
+/** Builds a DivIcon that uses the real pinpoint PNG (with selection ring when active) */
+function pinpointDivIcon(
+  L: typeof import("leaflet"),
+  iconUrl: string,
+  isSelected: boolean,
+  color: string,
+) {
+  const size   = isSelected ? 38 : 28;
+  const ring   = isSelected
+    ? `<div style="
+        position:absolute;top:50%;left:50%;
+        width:${size + 14}px;height:${size + 14}px;
+        margin-left:-${(size + 14) / 2}px;margin-top:-${(size + 14) / 2}px;
+        border-radius:50%;border:2.5px solid ${color};opacity:0.7;
+        animation:locPulse 1.8s ease-out infinite;"></div>`
+    : "";
+  const shadow = isSelected
+    ? `drop-shadow(0 0 7px ${color}99)`
+    : "drop-shadow(0 2px 5px rgba(0,0,0,0.45))";
+
+  return L.divIcon({
+    className: "",
+    html: `<style>
+      @keyframes locPulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.9);opacity:0}}
+    </style>
+    <div style="position:relative;width:${size}px;height:${size}px;cursor:pointer;">
+      ${ring}
+      <img src="${iconUrl}" style="width:${size}px;height:${size}px;
+        object-fit:contain;display:block;filter:${shadow};" />
+    </div>`,
+    iconSize:    [size, size],
+    iconAnchor:  [size / 2, size],
+    popupAnchor: [0, -size],
+  });
+}
+
+/** Fallback SVG pins (used when no category pinpoint is available) */
 function selectedPinSvg(status: string) {
   const color = status === "Maintenance" || status === "Construction" ? "#f59e0b" : "#ef4444";
   return `
@@ -61,10 +121,31 @@ export default function LocationMap({
   height = "176px",
   className = "",
 }: LocationMapProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<import("leaflet").Map | null>(null);
-  const markersRef = useRef<Map<number, import("leaflet").Marker>>(new Map());
-  const prevSelectedId = useRef<number | null>(null);
+  const containerRef    = useRef<HTMLDivElement>(null);
+  const wrapperRef      = useRef<HTMLDivElement>(null);
+  const mapRef          = useRef<import("leaflet").Map | null>(null);
+  const markersRef      = useRef<Map<number, import("leaflet").Marker>>(new Map());
+  const prevSelectedId  = useRef<number | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const toggleFullscreen = () => {
+    if (!wrapperRef.current) return;
+    if (!document.fullscreenElement) {
+      wrapperRef.current.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
+
+  useEffect(() => {
+    if (mapRef.current) setTimeout(() => mapRef.current?.invalidateSize(), 100);
+  }, [isFullscreen]);
 
   // ── Init map & all markers once ────────────────────────────────────────────
   useEffect(() => {
@@ -100,18 +181,18 @@ export default function LocationMap({
       // Draw all markers
       locations.forEach((loc) => {
         const isSelected = loc.id === selectedId;
-        const html = isSelected ? selectedPinSvg(loc.status ?? "Active") : smallPinSvg(loc.status ?? "Active");
-        const size: [number, number] = isSelected ? [40, 50] : [24, 30];
-        const anchor: [number, number] = isSelected ? [20, 50] : [12, 30];
+        const icon = buildIcon(L, loc, isSelected);
 
-        const icon = L.divIcon({ className: "", html, iconSize: size, iconAnchor: anchor });
         const marker = L.marker([loc.lat, loc.lng], { icon, zIndexOffset: isSelected ? 1000 : 0 })
           .addTo(map)
-          .bindTooltip(`<b>${loc.label}</b><br><span style="color:#94a3b8;font-size:10px">${loc.status ?? ""}</span>`, {
-            direction: "top",
-            offset: isSelected ? [0, -52] : [0, -32],
-            className: "loc-tooltip",
-          });
+          .bindTooltip(
+            `<b>${loc.label}</b><br><span style="color:#94a3b8;font-size:10px">${loc.status ?? ""}</span>`,
+            {
+              direction: "top",
+              offset: isSelected ? [0, -40] : [0, -30],
+              className: "loc-tooltip",
+            }
+          );
         markersRef.current.set(loc.id, marker);
       });
 
@@ -182,14 +263,12 @@ export default function LocationMap({
         const marker = markersRef.current.get(loc.id);
         if (!marker) return;
         const isSelected = loc.id === selectedId;
-        const html = isSelected ? selectedPinSvg(loc.status ?? "Active") : smallPinSvg(loc.status ?? "Active");
-        const size: [number, number] = isSelected ? [40, 50] : [24, 30];
-        const anchor: [number, number] = isSelected ? [20, 50] : [12, 30];
-        marker.setIcon(L.divIcon({ className: "", html, iconSize: size, iconAnchor: anchor }));
+        const icon = buildIcon(L, loc, isSelected);
+        marker.setIcon(icon);
         marker.setZIndexOffset(isSelected ? 1000 : 0);
       });
 
-      mapRef.current.flyTo([selectedLoc.lat, selectedLoc.lng], 13, { duration: 0.9 });
+      mapRef.current.flyTo([selectedLoc.lat, selectedLoc.lng], 10, { duration: 0.9 });
       prevSelectedId.current = selectedId;
     };
 
@@ -197,8 +276,33 @@ export default function LocationMap({
   }, [selectedId, locations]);
 
   return (
-    <div className={`relative ${className}`} style={{ height }}>
+    <div ref={wrapperRef} className={`relative ${className}`} style={{ height }}>
       <div ref={containerRef} style={{ height: "100%", width: "100%" }} />
+
+      {/* Fullscreen toggle */}
+      <button
+        onClick={toggleFullscreen}
+        title={isFullscreen ? "Keluar fullscreen" : "Fullscreen"}
+        style={{
+          position: "absolute", top: 8, left: 8, zIndex: 1000,
+          background: "rgba(255,255,255,0.92)",
+          border: "1px solid rgba(0,0,0,0.13)",
+          borderRadius: 7, width: 28, height: 28,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          cursor: "pointer", boxShadow: "0 2px 6px rgba(0,0,0,0.16)",
+        }}
+      >
+        {isFullscreen ? (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1e2d4d" strokeWidth="2.2" strokeLinecap="round">
+            <path d="M8 3v3a2 2 0 01-2 2H3M21 8h-3a2 2 0 01-2-2V3M3 16h3a2 2 0 012 2v3M16 21v-3a2 2 0 012-2h3" />
+          </svg>
+        ) : (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1e2d4d" strokeWidth="2.2" strokeLinecap="round">
+            <path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M16 21h3a2 2 0 002-2v-3" />
+          </svg>
+        )}
+      </button>
+
       {stats.length > 0 && (
         <div className="absolute bottom-3 left-3 flex gap-2 z-[1000] flex-wrap">
           {stats.map((s) => (
@@ -214,4 +318,34 @@ export default function LocationMap({
       )}
     </div>
   );
+}
+
+/** Builds the appropriate Leaflet DivIcon for a location */
+function buildIcon(
+  L: typeof import("leaflet"),
+  loc: MapLocation,
+  isSelected: boolean,
+): import("leaflet").DivIcon {
+  if (loc.category && CATEGORY_PINPOINT[loc.category]) {
+    const url   = CATEGORY_PINPOINT[loc.category];
+    const color = CATEGORY_COLOR[loc.category] ?? "#64748b";
+    return pinpointDivIcon(L, url, isSelected, color);
+  }
+  // Fallback: generic SVG pin
+  if (isSelected) {
+    return L.divIcon({
+      className: "",
+      html: selectedPinSvg(loc.status ?? "Active"),
+      iconSize:    [40, 50],
+      iconAnchor:  [20, 50],
+      popupAnchor: [0, -52],
+    });
+  }
+  return L.divIcon({
+    className: "",
+    html: smallPinSvg(loc.status ?? "Active"),
+    iconSize:    [24, 30],
+    iconAnchor:  [12, 30],
+    popupAnchor: [0, -32],
+  });
 }
