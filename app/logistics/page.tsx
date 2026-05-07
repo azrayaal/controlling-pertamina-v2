@@ -2,7 +2,28 @@
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { logisticsKPI, dispatchVolumeData } from "@/lib/mockData";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Ship, Camera, AlertTriangle, Activity } from "lucide-react";
+import { Ship, Camera, AlertTriangle, Activity, Truck, Layers, Filter } from "lucide-react";
+import dynamic from "next/dynamic";
+import Image from "next/image";
+import { useState } from "react";
+
+const LogisticsMap = dynamic(
+  () => import("@/components/dashboard/LogisticsMap"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full bg-slate-100 animate-pulse flex items-center justify-center rounded-xl">
+        <div className="text-center">
+          <div className="w-8 h-8 border-3 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+          <span className="text-slate-400 text-xs font-medium">Loading Map…</span>
+        </div>
+      </div>
+    ),
+  }
+);
+
+type RouteFilter = "all" | "pipeline" | "truck" | "vessel";
+type MapType = "satellite" | "street";
 
 const routeComplianceData = [
   { day: "Sun", value: 88 }, { day: "Mon", value: 92 }, { day: "Tue", value: 85 },
@@ -20,9 +41,26 @@ const kpiColors: Record<string, string> = {
   white: "text-slate-800",
 };
 
+const FILTER_OPTIONS: { key: RouteFilter; label: string; icon: React.ReactNode; color: string }[] = [
+  { key: "all",      label: "Semua",    icon: <Layers size={12} />,  color: "#1e2d4d" },
+  { key: "pipeline", label: "Pipeline", icon: <Activity size={12}/>, color: "#f59e0b" },
+  { key: "vessel",   label: "Kapal",    icon: <Ship size={12}/>,     color: "#3b82f6" },
+  { key: "truck",    label: "Truck",    icon: <Truck size={12}/>,    color: "#e63946" },
+];
+
+// CCTV images from public/cctv/
+const CCTV_IMAGES = [
+  "/cctv/cctv1.png", "/cctv/cctv2.png", "/cctv/cctv3.png",
+  "/cctv/cctv4.png", "/cctv/cctv5.png", "/cctv/cctv6.png",
+  "/cctv/cctv7.png", "/cctv/cctv8.png", "/cctv/cctv9.png",
+];
+
 export default function LogisticsPage() {
+  const [activeFilter, setActiveFilter] = useState<RouteFilter>("all");
+  const [mapType, setMapType] = useState<MapType>("street");
+
   return (
-    <DashboardLayout title="Logistics Control Dashboard" subtitle="GPS Tracking · Pipeline · Vessel · Reconciliation Engine">
+    <DashboardLayout title="Logistics Control Dashboard" subtitle="GPS Tracking · Pipeline Routes · Vessel · Terminal Networks">
       <div className="space-y-4">
         {/* KPI Strip */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -35,19 +73,29 @@ export default function LogisticsPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Truck GPS */}
+          {/* ── Truck GPS & CCTV ── */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100">
-              <h3 className="text-sm font-semibold text-slate-800">Truck GPS & E-Seal Status</h3>
-              <p className="text-[10px] text-slate-400">Live GPS & Cargo Status</p>
+              <div className="flex items-center gap-2">
+                <Truck size={14} className="text-red-500" />
+                <h3 className="text-sm font-semibold text-slate-800">Truck GPS & E-Seal Status</h3>
+              </div>
+              <p className="text-[10px] text-slate-400 mt-0.5">Live GPS · Cargo Status · CCTV Feed</p>
             </div>
             <div className="p-3">
+              {/* Real CCTV images grid */}
               <div className="grid grid-cols-2 gap-2 mb-3">
-                {[1,2,3,4].map(n => (
-                  <div key={n} className="aspect-video bg-slate-900 rounded-lg overflow-hidden relative flex items-center justify-center">
-                    <Camera size={20} className="text-slate-600" />
-                    <span className="absolute top-1 left-1 text-[8px] text-white bg-black/50 px-1 rounded">CCTV</span>
-                    <div className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                {CCTV_IMAGES.slice(0, 4).map((src, i) => (
+                  <div key={i} className="aspect-video rounded-lg overflow-hidden relative">
+                    <Image src={src} alt={`CCTV Truck ${i + 1}`} fill style={{ objectFit: "cover" }} />
+                    <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px)" }} />
+                    <div className="absolute top-1 left-1 flex items-center gap-0.5 bg-red-600/90 rounded px-1 py-0.5">
+                      <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                      <span className="text-white text-[6.5px] font-bold">LIVE</span>
+                    </div>
+                    <div className="absolute bottom-1 left-1">
+                      <span className="text-white/80 text-[7px] font-semibold bg-black/40 px-1 rounded">Truck Cam {i + 1}</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -59,7 +107,7 @@ export default function LogisticsPage() {
                       <XAxis dataKey="day" tick={{ fontSize: 8, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fontSize: 8, fill: "#94a3b8" }} axisLine={false} tickLine={false} domain={[70, 100]} />
                       <Tooltip contentStyle={{ fontSize: 10 }} />
-                      <Line type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="value" stroke="#22c55e" strokeWidth={2.5} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
@@ -88,57 +136,115 @@ export default function LogisticsPage() {
             </div>
           </div>
 
-          {/* Map */}
-          <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="h-full min-h-80 relative">
-              <svg viewBox="0 0 400 320" className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-                <rect width="400" height="320" fill="#1a365d"/>
-                {/* Indonesia silhouette simplified */}
-                <path d="M20,80 Q60,60 100,68 Q140,60 165,75 Q185,88 180,100 Q172,115 155,118 Q135,125 110,118 Q88,124 65,116 Q42,112 28,98 Q18,88 20,80Z" fill="#2d6a4f" opacity="0.8"/>
-                <path d="M95,170 Q135,155 175,160 Q215,155 255,162 Q295,157 335,165 Q360,162 375,172 Q385,183 380,197 Q370,210 350,212 Q328,218 305,212 Q282,219 258,213 Q235,220 210,214 Q185,221 160,215 Q138,222 115,215 Q98,210 92,196 Q88,183 95,170Z" fill="#2d6a4f" opacity="0.8"/>
-                <path d="M245,45 Q280,32 325,40 Q368,48 388,68 Q398,85 385,100 Q368,112 340,108 Q318,115 295,107 Q275,114 258,104 Q242,112 235,98 Q228,82 232,65 Q238,52 245,45Z" fill="#2d6a4f" opacity="0.8"/>
-                {/* Route lines */}
-                <path d="M115,180 Q145,175 165,200 Q190,220 220,215 Q250,210 270,195 Q300,185 330,190" stroke="#fbbf24" strokeWidth="1.5" strokeDasharray="4,3" fill="none"/>
-                <path d="M100,90 Q130,150 160,175" stroke="#60a5fa" strokeWidth="1.5" strokeDasharray="4,3" fill="none"/>
-                {/* Dots */}
-                <circle cx="115" cy="180" r="5" fill="#e63946"/>
-                <circle cx="330" cy="190" r="5" fill="#e63946"/>
-                <circle cx="220" cy="215" r="4" fill="#fbbf24"/>
-                <circle cx="165" cy="200" r="4" fill="#fbbf24"/>
-                {/* Ship markers */}
-                <polygon points="195,140 200,155 195,150 190,155" fill="#60a5fa"/>
-                <polygon points="280,130 285,145 280,140 275,145" fill="#60a5fa"/>
-                {/* Labels */}
-                <text x="100" y="178" fill="#e2e8f0" fontSize="8">Merak</text>
-                <text x="318" y="188" fill="#e2e8f0" fontSize="8">Surabaya</text>
-                <text x="206" y="230" fill="#e2e8f0" fontSize="8">Jakarta</text>
-                {/* Legend */}
-                <rect x="10" y="270" width="380" height="40" rx="4" fill="#0f172a" opacity="0.6"/>
-                <text x="18" y="285" fill="#94a3b8" fontSize="7">── GPS Trails</text>
-                <text x="18" y="297" fill="#fbbf24" fontSize="7">── Pipeline Route</text>
-                <text x="110" y="285" fill="#ef4444" fontSize="7">● Pipeline Depots</text>
-                <text x="110" y="297" fill="#60a5fa" fontSize="7">● Delivery Points</text>
-              </svg>
+          {/* ── Logistics Map (center, full Leaflet) ── */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden flex flex-col" style={{ minHeight: 420 }}>
+            {/* Map header / filter bar */}
+            <div className="px-4 py-2.5 border-b border-slate-100 flex flex-wrap items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-xs font-bold text-slate-800">Logistics Map</span>
+                <span className="text-[10px] text-slate-400">— Indonesia</span>
+              </div>
+              <div className="flex-1" />
+              {/* Filter pills like the reference image */}
+              <div className="flex items-center gap-1 p-0.5 rounded-lg" style={{ background: "#f1f5f9" }}>
+                {FILTER_OPTIONS.map(({ key, label, icon, color }) => (
+                  <button
+                    key={key}
+                    onClick={() => setActiveFilter(key)}
+                    className="flex items-center gap-1 px-2 h-6 rounded-md text-[10px] font-semibold transition-all"
+                    style={activeFilter === key
+                      ? { background: color, color: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.2)" }
+                      : { color: "#64748b" }}
+                  >
+                    {icon}{label}
+                  </button>
+                ))}
+              </div>
+              {/* Map type switcher */}
+              <div className="flex items-center gap-0.5">
+                {(["street", "satellite"] as MapType[]).map((mt) => (
+                  <button
+                    key={mt}
+                    onClick={() => setMapType(mt)}
+                    className="px-2 h-6 rounded-md text-[10px] font-semibold transition-colors"
+                    style={mapType === mt
+                      ? { background: "#1e293b", color: "#fff" }
+                      : { color: "#94a3b8" }}
+                  >
+                    {mt === "street" ? "Map" : "Sat"}
+                  </button>
+                ))}
+              </div>
+              <button className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: "#f1f5f9" }}>
+                <Filter size={11} className="text-slate-500" />
+              </button>
+            </div>
+
+            {/* Map container */}
+            <div className="flex-1 relative" style={{ minHeight: 340 }}>
+              <LogisticsMap
+                activeFilter={activeFilter}
+                mapType={mapType}
+                height="100%"
+              />
+
+              {/* Map title badge */}
+              <div className="absolute top-3 right-3 z-[400] pointer-events-none">
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-1.5 bg-white/90 backdrop-blur-sm rounded-xl px-3 py-1.5 shadow-sm border border-white/50">
+                    <span className="text-[9px] font-bold text-slate-500">GPS Trails</span>
+                    <span className="text-slate-200">·</span>
+                    <span className="text-[9px] font-bold text-amber-500">Pipeline Routes</span>
+                    <span className="text-slate-200">·</span>
+                    <span className="text-[9px] font-bold text-teal-500">Depot Positions</span>
+                  </div>
+                  {/* Active filter indicator */}
+                  {activeFilter !== "all" && (
+                    <div className="flex items-center gap-1 rounded-lg px-2 py-1 text-[9px] font-bold text-white"
+                      style={{ background: activeFilter === "pipeline" ? "#f59e0b" : activeFilter === "vessel" ? "#3b82f6" : "#e63946" }}>
+                      {activeFilter === "pipeline" ? "📍 Pipeline Route" : activeFilter === "vessel" ? "⛵ Vessel Route" : "🚛 Truck Route"}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Vessel & Pipeline */}
+          {/* ── Vessel & Pipeline ── */}
           <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-slate-800">Vessel & Pipeline Monitoring</h3>
+                <div className="flex items-center gap-2">
+                  <Ship size={14} className="text-blue-500" />
+                  <h3 className="text-sm font-semibold text-slate-800">Vessel & Pipeline Monitoring</h3>
+                </div>
                 <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> AIS tracking
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> AIS Live
                 </span>
               </div>
-              <p className="text-[10px] text-slate-400">Vessel AIS Positions</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Vessel AIS · Pipeline Pressure</p>
             </div>
             <div className="p-3 space-y-3">
-              {/* Vessel image */}
-              <div className="aspect-video bg-slate-800 rounded-xl overflow-hidden relative flex items-center justify-center">
-                <Ship size={32} className="text-slate-500" />
-                <span className="absolute top-1 left-1 text-[8px] text-white bg-black/50 px-1 rounded">CCTV</span>
+              {/* Vessel CCTV — real images */}
+              <div className="grid grid-cols-2 gap-1.5">
+                {CCTV_IMAGES.slice(5, 9).map((src, i) => (
+                  <div key={i} className="aspect-video rounded-lg overflow-hidden relative">
+                    <Image src={src} alt={`CCTV Vessel ${i + 1}`} fill style={{ objectFit: "cover" }} />
+                    <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px)" }} />
+                    <div className="absolute top-1 left-1 flex items-center gap-0.5 bg-red-600/90 rounded px-1 py-0.5">
+                      <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                      <span className="text-white text-[6.5px] font-bold">LIVE</span>
+                    </div>
+                    <div className="absolute bottom-1 left-1">
+                      <span className="text-white/80 text-[7px] font-semibold bg-black/40 px-1 rounded">
+                        {i === 0 ? "Bridge" : i === 1 ? "Cargo Deck" : i === 2 ? "Engine Room" : "Stern"}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
+
               <div className="grid grid-cols-2 gap-3 text-[11px]">
                 <div>
                   <p className="text-slate-400">Cargo Volume</p>
@@ -151,18 +257,19 @@ export default function LogisticsPage() {
                 <div>
                   <p className="text-slate-400">ETA</p>
                   <p className="font-bold text-slate-800">25 hrs</p>
-                  <p className="text-slate-400 mt-1">Update 1:</p>
-                  <p className="font-semibold text-slate-700">24 hrs</p>
-                  <p className="text-slate-400 mt-1">Update 2:</p>
-                  <p className="font-semibold text-slate-700">38 mats</p>
+                  <p className="text-slate-400 mt-1">Vessels Active:</p>
+                  <p className="font-semibold text-slate-700">12 Unit</p>
+                  <p className="text-slate-400 mt-1">Fleet Alert:</p>
+                  <p className="font-semibold text-red-500">3 Unit</p>
                 </div>
               </div>
-              {/* Pipeline pressure */}
+
+              {/* Pipeline pressure chart */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-[11px] font-semibold text-slate-700">Pipeline Pressure</p>
                   <span className="text-[10px] text-red-500 font-semibold flex items-center gap-1">
-                    <AlertTriangle size={10} /> Leak Detection Alerts
+                    <AlertTriangle size={10} /> Leak Alerts
                   </span>
                 </div>
                 <div className="h-16">
@@ -170,22 +277,39 @@ export default function LogisticsPage() {
                     <LineChart data={pipelineData}>
                       <XAxis dataKey="t" tick={{ fontSize: 8, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
                       <Tooltip contentStyle={{ fontSize: 10 }} />
-                      <Line type="monotone" dataKey="v" stroke="#ef4444" strokeWidth={1.5} dot={false} />
+                      <Line type="monotone" dataKey="v" stroke="#ef4444" strokeWidth={2} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
+
+              {/* Pipeline alert CCTV */}
               <div>
-                <p className="text-[11px] font-semibold text-slate-700 mb-1.5">Pipeline Pressure Alerts</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {[1,2].map(n => (
-                    <div key={n} className="aspect-video bg-slate-800 rounded-lg flex items-center justify-center relative">
-                      <Activity size={16} className="text-slate-500" />
-                      <span className="absolute top-1 left-1 text-[8px] text-white bg-black/50 px-1 rounded">CCTV</span>
+                <p className="text-[11px] font-semibold text-slate-700 mb-1.5 flex items-center gap-1">
+                  <AlertTriangle size={11} className="text-red-500" /> Pipeline Pressure Alerts
+                </p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {CCTV_IMAGES.slice(0, 2).map((src, i) => (
+                    <div key={i} className="aspect-video rounded-lg overflow-hidden relative">
+                      <Image src={src} alt={`Pipeline CCTV ${i + 1}`} fill style={{ objectFit: "cover" }} />
+                      <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px)" }} />
+                      <div className="absolute top-1 right-1 flex items-center gap-0.5 bg-amber-500/90 rounded px-1 py-0.5">
+                        <AlertTriangle size={6} className="text-white" />
+                        <span className="text-white text-[6px] font-bold">ALRT</span>
+                      </div>
+                      <div className="absolute bottom-1 left-1">
+                        <span className="text-white/80 text-[7px] font-semibold bg-black/40 px-1 rounded">
+                          Sector {i === 0 ? "Cikampek" : "Merak"}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
+
+              <a href="/live-cctv" className="flex items-center justify-center gap-1.5 w-full h-8 rounded-xl bg-slate-800 text-white text-[11px] font-bold hover:bg-slate-700 transition-colors">
+                <Camera size={12} /> Live CCTV Full View
+              </a>
             </div>
           </div>
         </div>

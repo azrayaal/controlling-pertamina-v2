@@ -12,6 +12,8 @@ import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useState, useCallback, useMemo } from "react";
 
+const Model3DViewer = dynamic(() => import("@/components/3d/Model3DViewer"), { ssr: false });
+
 const LiveTrackingMap = dynamic(
   () => import("@/components/dashboard/LiveTrackingMap"),
   {
@@ -490,21 +492,16 @@ function VesselDetailModal({
           </span>
         </div>
 
-        {/* 3D Ship */}
-        <div className="flex-1 flex items-center justify-center p-8">
-          <div className="relative">
-            {/* Ocean waves */}
-            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[600px] h-16 opacity-30">
-              <svg viewBox="0 0 600 64" className="w-full h-full">
-                <path d="M0 32 Q75 8 150 32 Q225 56 300 32 Q375 8 450 32 Q525 56 600 32 L600 64 L0 64 Z" fill="#38bdf8" />
-                <path d="M0 40 Q75 20 150 40 Q225 60 300 40 Q375 20 450 40 Q525 60 600 40 L600 64 L0 64 Z" fill="#0ea5e9" opacity="0.6" />
-              </svg>
-            </div>
-            {/* Vessel image */}
-            <div className="relative w-[480px] h-[280px] drop-shadow-2xl" style={{ filter: "drop-shadow(0 20px 40px rgba(0,0,0,0.5))" }}>
-              <Image src="/kapal3d.png" alt="3D Vessel View" fill style={{ objectFit: "contain" }} />
-            </div>
-          </div>
+        {/* 3D Ship — interactive 360° Three.js model */}
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Model3DViewer
+            type="tanker"
+            width={520}
+            height={300}
+            label={v.name}
+            subtitle={`${v.port} → ${v.destPort}`}
+            className="shadow-2xl"
+          />
         </div>
 
         {/* CCTV bottom bar */}

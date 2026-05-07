@@ -1,7 +1,18 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import dynamic from "next/dynamic";
+import { X, Camera, Navigation, MessageSquare, Phone, Video, AlertTriangle, Star } from "lucide-react";
 import type { vessels as VesselsType, trucks as TrucksType } from "@/lib/mockData";
 import { cctvLocations } from "@/lib/mockData";
+
+const Model3DViewer = dynamic(() => import("@/components/3d/Model3DViewer"), { ssr: false });
+
+const CCTV_IMAGES = [
+  "/cctv/cctv1.png", "/cctv/cctv2.png", "/cctv/cctv3.png",
+  "/cctv/cctv4.png", "/cctv/cctv5.png", "/cctv/cctv6.png",
+  "/cctv/cctv7.png", "/cctv/cctv8.png", "/cctv/cctv9.png",
+];
 
 type Vessel = (typeof VesselsType)[number];
 type Truck  = (typeof TrucksType)[number];
@@ -163,38 +174,38 @@ function anomalyLabelIcon(L: LeafletType, label: string) {
 }
 
 // ── Infrastructure marker icon ────────────────────────────────────────────────
-const INFRA_CONFIG: Record<string, { color: string; pinpoint: string }> = {
-  SPBU:     { color: "#22c55e", pinpoint: "/spbuiconpinpoint.png"     },
-  Kilang:   { color: "#f97316", pinpoint: "/kilangiconpinpoint.png"   },
-  Storage:  { color: "#8b5cf6", pinpoint: "/storageiconpinpoint.png"  },
-  Terminal: { color: "#14b8a6", pinpoint: "/terminaliconpinpoint.png" },
-  Upstream: { color: "#3b82f6", pinpoint: "/upstreamiconpinpoint.png" },
+const INFRA_CONFIG: Record<string, { color: string; pinpoint: string; size: [number, number] }> = {
+  SPBU:     { color: "#22c55e", pinpoint: "/spbuiconpinpoint.png",     size: [32, 42]  },
+  Kilang:   { color: "#f97316", pinpoint: "/kilangiconpinpoint.png",   size: [40, 52]  },
+  Storage:  { color: "#8b5cf6", pinpoint: "/storageiconpinpoint.png",  size: [40, 52]  },
+  Terminal: { color: "#14b8a6", pinpoint: "/terminaliconpinpoint.png", size: [46, 58]  },
+  Upstream: { color: "#3b82f6", pinpoint: "/upstreamiconpinpoint.png", size: [46, 58]  },
 };
 
 function infraDivIcon(L: LeafletType, type: string, hasAlert: boolean) {
-  const cfg  = INFRA_CONFIG[type] ?? { color: "#64748b", pinpoint: "" };
-  const size = 28;
-  const alertDot = hasAlert
-    ? `<div style="position:absolute;top:-2px;right:-2px;width:8px;height:8px;
-        border-radius:50%;background:#ef4444;border:1.5px solid white;"></div>`
+  const cfg         = INFRA_CONFIG[type] ?? { color: "#64748b", pinpoint: "", size: [32, 42] as [number,number] };
+  const [pw, ph]    = cfg.size;
+  const alertDot    = hasAlert
+    ? `<div style="position:absolute;top:-3px;right:-3px;width:10px;height:10px;
+        border-radius:50%;background:#ef4444;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>`
     : "";
 
   const iconHtml = cfg.pinpoint
-    ? `<img src="${cfg.pinpoint}" style="width:100%;height:100%;object-fit:contain;display:block;" />`
-    : `<div style="width:100%;height:100%;border-radius:50%;background:${cfg.color};border:2px solid white;
-        box-shadow:0 2px 6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;">
-         <div style="width:8px;height:8px;border-radius:50%;background:white;opacity:.9;"></div>
+    ? `<img src="${cfg.pinpoint}" style="width:${pw}px;height:${ph}px;object-fit:contain;display:block;" />`
+    : `<div style="width:${pw}px;height:${ph}px;border-radius:6px 6px 0 0;background:${cfg.color};border:2px solid white;
+        box-shadow:0 3px 8px rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;">
+         <div style="width:10px;height:10px;border-radius:50%;background:white;opacity:.9;"></div>
        </div>`;
 
   return L.divIcon({
     className: "",
-    html: `<div style="position:relative;width:${size}px;height:${size}px;cursor:pointer;
-        filter:drop-shadow(0 2px 5px rgba(0,0,0,.35));">
+    html: `<div style="position:relative;width:${pw}px;height:${ph}px;cursor:pointer;
+        filter:drop-shadow(0 3px 7px rgba(0,0,0,.45));">
       ${iconHtml}${alertDot}
     </div>`,
-    iconSize:    [size, size],
-    iconAnchor:  [size / 2, size],
-    popupAnchor: [0, -size],
+    iconSize:    [pw, ph],
+    iconAnchor:  [pw / 2, ph],
+    popupAnchor: [0, -ph],
   });
 }
 
@@ -302,6 +313,346 @@ function infraPopupHtml(loc: (typeof cctvLocations)[number]): string {
       <div style="color:rgba(255,255,255,.35);font-size:9px;margin-top:4px;">${loc.cameras.length} kamera aktif</div>
     </div>
   </div>`;
+}
+
+// ── Fullscreen Vessel Detail Panel ────────────────────────────────────────────
+function FullscreenVesselPanel({
+  vessel,
+  onClose,
+}: {
+  vessel: Vessel;
+  onClose: () => void;
+}) {
+  const v = vessel;
+  const statusLabel = v.trackingStatus === "alert" ? "Alert" : "In Transit";
+  const statusBg    = v.trackingStatus === "alert" ? "bg-red-500" : "bg-blue-500";
+
+  return (
+    <div
+      className="absolute inset-y-0 right-0 z-[600] flex flex-col overflow-hidden"
+      style={{ width: 320, background: "#0f172a", borderLeft: "1px solid rgba(255,255,255,0.1)" }}
+    >
+      {/* Header image */}
+      <div className="relative flex-shrink-0 overflow-hidden" style={{ height: 150 }}>
+        <Image src="/kapal1.png" alt={v.name} fill style={{ objectFit: "cover" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.2), rgba(0,0,0,0.7))" }} />
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.5)" }}
+        >
+          <X size={11} className="text-white" />
+        </button>
+        <div className="absolute top-2 left-2 flex gap-1">
+          <span className={`flex items-center gap-1 ${statusBg} text-white text-[9px] font-bold px-2 py-0.5 rounded-full`}>
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /> {statusLabel}
+          </span>
+        </div>
+        <div className="absolute bottom-2 left-3">
+          <p className="text-white font-bold text-sm drop-shadow">{v.name}</p>
+          <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 9 }}>{v.typeDesc}</p>
+        </div>
+      </div>
+
+      {/* 3D Tanker View — interactive Three.js */}
+      <div className="relative flex-shrink-0">
+        <Model3DViewer
+          type="tanker"
+          width={320}
+          height={170}
+          label={v.name}
+          subtitle={`${v.port} → ${v.destPort}`}
+        />
+      </div>
+
+      {/* Route & Progress */}
+      <div className="flex-shrink-0 px-4 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="flex items-center gap-2 mb-2">
+          <div className="text-center">
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 8 }}>FROM</p>
+            <p style={{ color: "#fff", fontWeight: 700, fontSize: 11 }}>{v.port}</p>
+          </div>
+          <div className="flex-1 flex items-center gap-1">
+            <div className="flex-1" style={{ height: 1, background: "rgba(255,255,255,0.2)" }} />
+            <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: v.color ?? "#1e2d4d" }}>
+              <Navigation size={9} className="text-white" />
+            </div>
+            <div className="flex-1" style={{ height: 1, background: "rgba(255,255,255,0.2)" }} />
+          </div>
+          <div className="text-center">
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 8 }}>TO</p>
+            <p style={{ color: "#fff", fontWeight: 700, fontSize: 11 }}>{v.destPort}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 rounded-full overflow-hidden" style={{ height: 4, background: "rgba(255,255,255,0.1)" }}>
+            <div className="h-full rounded-full bg-blue-500" style={{ width: `${v.progress}%`, transition: "width 0.3s" }} />
+          </div>
+          <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 9, fontWeight: 600 }}>{v.progress}%</span>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="flex-shrink-0 grid grid-cols-3 gap-px" style={{ background: "rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        {[
+          { label: "Speed", value: v.speed },
+          { label: "ETA", value: v.eta },
+          { label: "Volume", value: v.cargoVolume },
+        ].map((s) => (
+          <div key={s.label} className="px-3 py-2 text-center" style={{ background: "#0f172a" }}>
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 8, textTransform: "uppercase" }}>{s.label}</p>
+            <p style={{ color: "#fff", fontWeight: 700, fontSize: 11 }}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Captain */}
+      <div className="flex-shrink-0 px-4 py-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0" style={{ background: "#334155" }}>
+            {v.captain.replace("Capt. ", "").split(" ").map((n) => n[0]).join("").slice(0, 2)}
+          </div>
+          <div className="flex-1">
+            <p style={{ color: "#fff", fontWeight: 600, fontSize: 11 }}>{v.captain}</p>
+            <div className="flex items-center gap-0.5 mt-0.5">
+              {Array.from({ length: 5 }, (_, i) => (
+                <Star key={i} size={7} className={i < Math.round(v.captainRating) ? "text-amber-400 fill-amber-400" : "text-slate-600"} />
+              ))}
+              <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 8, marginLeft: 2 }}>{v.captainRating}</span>
+            </div>
+          </div>
+          <div className="flex gap-1">
+            <button className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)" }}>
+              <MessageSquare size={10} className="text-white/70" />
+            </button>
+            <button className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)" }}>
+              <Phone size={10} className="text-white/70" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* CCTV Feed */}
+      <div className="flex-1 px-3 py-2.5 overflow-y-auto" style={{ minHeight: 0 }}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1">
+            <Camera size={10} className="text-white/50" />
+            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>
+              Live CCTV — {v.name}
+            </p>
+          </div>
+          <a href="/live-cctv" style={{ color: "#ef4444", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" /> LIVE
+          </a>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {(v.cctv ?? []).map((cam, i) => (
+            <div key={cam.id} className="relative rounded-lg overflow-hidden" style={{ aspectRatio: "16/9" }}>
+              <Image
+                src={CCTV_IMAGES[i % CCTV_IMAGES.length]}
+                alt={cam.name}
+                fill
+                style={{ objectFit: "cover" }}
+              />
+              <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px)" }} />
+              <div className="absolute top-1 right-1 flex items-center gap-0.5 rounded px-1 py-0.5" style={{ background: "rgba(220,38,38,0.9)" }}>
+                <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                <span style={{ color: "#fff", fontSize: 6, fontWeight: 700 }}>{cam.status === "Alert" ? "ALRT" : "LIVE"}</span>
+              </div>
+              {cam.status === "Alert" && (
+                <div className="absolute top-1 left-1">
+                  <AlertTriangle size={8} className="text-amber-400" />
+                </div>
+              )}
+              <div className="absolute bottom-0 inset-x-0 px-1 py-0.5" style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.7))" }}>
+                <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 7, fontWeight: 600 }}>{cam.name}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer action */}
+      <div className="flex-shrink-0 px-3 py-3">
+        <a href="/live-cctv" className="flex items-center justify-center gap-1.5 w-full h-8 rounded-xl font-bold text-white"
+          style={{ background: "#1e2d4d", fontSize: 11 }}>
+          <Video size={12} /> Live CCTV Full View
+        </a>
+      </div>
+    </div>
+  );
+}
+
+// ── Fullscreen Truck Detail Panel ──────────────────────────────────────────────
+function FullscreenTruckPanel({
+  truck,
+  onClose,
+}: {
+  truck: Truck;
+  onClose: () => void;
+}) {
+  const t = truck;
+  const statusLabel = t.trackingStatus === "alert" ? "Alert" : t.trackingStatus === "idle" ? "Idle" : "On Route";
+  const statusColor = t.trackingStatus === "alert" ? "#ef4444" : t.trackingStatus === "idle" ? "#94a3b8" : "#22c55e";
+
+  return (
+    <div
+      className="absolute inset-y-0 right-0 z-[600] flex flex-col overflow-hidden"
+      style={{ width: 300, background: "#0f172a", borderLeft: "1px solid rgba(255,255,255,0.1)" }}
+    >
+      {/* Header image */}
+      <div className="relative flex-shrink-0 overflow-hidden" style={{ height: 130 }}>
+        <Image src="/truck1.png" alt={t.plateNumber} fill style={{ objectFit: "cover", objectPosition: "center" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.75))" }} />
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 w-6 h-6 rounded-full flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.5)" }}
+        >
+          <X size={11} className="text-white" />
+        </button>
+        <div className="absolute top-2 left-2">
+          <span className="text-[9px] font-bold px-2 py-0.5 rounded-full text-white" style={{ background: statusColor }}>
+            {statusLabel}
+          </span>
+        </div>
+        <div className="absolute bottom-2 left-3">
+          <p className="text-white font-bold text-sm drop-shadow">{t.plateNumber}</p>
+          <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 9 }}>{t.idCode} · {t.origin}</p>
+        </div>
+      </div>
+
+      {/* 3D Truck View — interactive Three.js */}
+      <div className="relative flex-shrink-0">
+        <Model3DViewer
+          type="truck"
+          width={300}
+          height={160}
+          label={t.plateNumber}
+          subtitle={t.tableRoute}
+        />
+      </div>
+
+      {/* Route */}
+      <div className="flex-shrink-0 px-4 py-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="flex flex-col gap-1.5">
+          {[
+            { dot: "bg-emerald-500", label: "Asal", value: t.origin },
+            { dot: "bg-blue-500", label: "Transit", value: "En Route" },
+            { dot: "bg-slate-500", label: "Tujuan", value: t.destination },
+          ].map((step) => (
+            <div key={step.label} className="flex items-center gap-2">
+              <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${step.dot}`} />
+              <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 8, width: 36 }}>{step.label}</p>
+              <p style={{ color: "#fff", fontSize: 10, fontWeight: 600 }} className="truncate">{step.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="flex-shrink-0 grid grid-cols-2 gap-px" style={{ background: "rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        {[
+          { label: "Muatan", value: t.load },
+          { label: "Jarak", value: t.distance },
+          { label: "Durasi", value: t.duration },
+          { label: "ETA", value: t.eta },
+        ].map((s, i) => (
+          <div key={s.label} className="px-3 py-2" style={{ background: "#0f172a", borderRight: i % 2 === 0 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
+            <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 8, textTransform: "uppercase" }}>{s.label}</p>
+            <p style={{ color: "#fff", fontWeight: 700, fontSize: 11 }}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Driver */}
+      <div className="flex-shrink-0 px-4 py-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0" style={{ background: "#334155" }}>
+            {t.driver.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+          </div>
+          <div className="flex-1">
+            <p style={{ color: "#fff", fontWeight: 600, fontSize: 11 }}>{t.driver}</p>
+            <div className="flex items-center gap-0.5 mt-0.5">
+              {Array.from({ length: 5 }, (_, i) => (
+                <Star key={i} size={7} className={i < Math.round(t.rating) ? "text-amber-400 fill-amber-400" : "text-slate-600"} />
+              ))}
+              <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 8, marginLeft: 2 }}>{t.rating}</span>
+            </div>
+          </div>
+          <div className="flex gap-1">
+            <button className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)" }}>
+              <MessageSquare size={10} className="text-white/70" />
+            </button>
+            <button className="w-6 h-6 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.1)" }}>
+              <Phone size={10} className="text-white/70" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Fuel Load */}
+      {t.fuelLoad.length > 0 && (
+        <div className="flex-shrink-0 px-4 py-2.5" style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 8, fontWeight: 700, textTransform: "uppercase", marginBottom: 6 }}>Muatan BBM</p>
+          <div className="flex flex-wrap gap-1.5">
+            {t.fuelLoad.map((f) => (
+              <span key={f.type} className="text-[9px] font-semibold px-2 py-0.5 rounded-full"
+                style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)" }}>
+                {f.type}: {f.amount}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* CCTV Feed */}
+      <div className="flex-1 px-3 py-2.5 overflow-y-auto" style={{ minHeight: 0 }}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1">
+            <Camera size={10} className="text-white/50" />
+            <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>Live CCTV</p>
+          </div>
+          <a href="/live-cctv" style={{ color: "#ef4444", fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" /> LIVE
+          </a>
+        </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          {(t.cctv ?? []).map((cam, i) => (
+            <div key={cam.id} className="relative rounded-lg overflow-hidden" style={{ aspectRatio: "16/9" }}>
+              <Image
+                src={CCTV_IMAGES[(i + 4) % CCTV_IMAGES.length]}
+                alt={cam.name}
+                fill
+                style={{ objectFit: "cover" }}
+              />
+              <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px)" }} />
+              <div className="absolute top-1 right-1 flex items-center gap-0.5 rounded px-1 py-0.5" style={{ background: "rgba(220,38,38,0.9)" }}>
+                <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                <span style={{ color: "#fff", fontSize: 6, fontWeight: 700 }}>{cam.status === "Alert" ? "ALRT" : "LIVE"}</span>
+              </div>
+              {cam.status === "Alert" && (
+                <div className="absolute top-1 left-1">
+                  <AlertTriangle size={8} className="text-amber-400" />
+                </div>
+              )}
+              <div className="absolute bottom-0 inset-x-0 px-1 py-0.5" style={{ background: "linear-gradient(transparent, rgba(0,0,0,0.7))" }}>
+                <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 7, fontWeight: 600 }}>{cam.name}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="flex-shrink-0 px-3 py-3">
+        <a href="/live-cctv" className="flex items-center justify-center gap-1.5 w-full h-8 rounded-xl font-bold text-white"
+          style={{ background: "#dc2626", fontSize: 11 }}>
+          <Video size={12} /> Live CCTV Full View
+        </a>
+      </div>
+    </div>
+  );
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -513,9 +864,9 @@ export default function LiveTrackingMap({
 
         const line = L.polyline([from, [lat, lng], to], {
           color: hasAlert ? "#ef4444" : (v.color ?? "#1e2d4d"),
-          weight: isSel ? 2.5 : 1.5,
-          opacity: isSel ? 0.85 : 0.4,
-          dashArray: "8 6",
+          weight: isSel ? 5 : 3.5,
+          opacity: isSel ? 0.9 : 0.65,
+          dashArray: "12 6",
         }).addTo(map);
         vesselLines.current.set(v.id, line);
 
@@ -551,9 +902,9 @@ export default function LiveTrackingMap({
 
         const line = L.polyline([from, [lat, lng], to], {
           color: hasAlert ? "#ef4444" : "#e63946",
-          weight: isSel ? 2.5 : 1.5,
-          opacity: isSel ? 0.85 : 0.4,
-          dashArray: "6 4",
+          weight: isSel ? 4.5 : 3,
+          opacity: isSel ? 0.9 : 0.65,
+          dashArray: "8 5",
         }).addTo(map);
         truckLines.current.set(t.id, line);
 
@@ -717,7 +1068,7 @@ export default function LiveTrackingMap({
       marker.setZIndexOffset(isSel ? 1000 : 0);
       const line = vesselLines.current.get(v.id);
       if (line) {
-        line.setStyle({ weight: isSel ? 2.5 : 1.5, opacity: isSel ? 0.85 : 0.4 });
+        line.setStyle({ weight: isSel ? 5 : 3.5, opacity: isSel ? 0.9 : 0.65 });
         if (isSel) line.bringToFront();
       }
     });
@@ -737,7 +1088,7 @@ export default function LiveTrackingMap({
       marker.setZIndexOffset(isSel ? 1000 : 0);
       const line = truckLines.current.get(t.id);
       if (line) {
-        line.setStyle({ weight: isSel ? 2.5 : 1.5, opacity: isSel ? 0.85 : 0.4 });
+        line.setStyle({ weight: isSel ? 4.5 : 3, opacity: isSel ? 0.9 : 0.65 });
         if (isSel) line.bringToFront();
       }
     });
@@ -769,6 +1120,10 @@ export default function LiveTrackingMap({
     }
   }, [selectedVesselId, selectedTruckId, vessels, trucks]);
 
+  // Find selected items
+  const selectedVessel = vessels.find((v) => v.id === selectedVesselId) ?? null;
+  const selectedTruck  = trucks.find((t) => t.id === selectedTruckId)   ?? null;
+
   return (
     <div
       ref={wrapperRef}
@@ -776,6 +1131,22 @@ export default function LiveTrackingMap({
       style={{ height, width: "100%" }}
     >
       <div ref={containerRef} style={{ height: "100%", width: "100%" }} />
+
+      {/* Fullscreen vessel detail panel (right side) */}
+      {isFullscreen && selectedVessel && (
+        <FullscreenVesselPanel
+          vessel={selectedVessel}
+          onClose={() => onVesselRef.current(selectedVesselId!)}
+        />
+      )}
+
+      {/* Fullscreen truck detail panel (right side) */}
+      {isFullscreen && selectedTruck && !selectedVessel && (
+        <FullscreenTruckPanel
+          truck={selectedTruck}
+          onClose={() => onTruckRef.current(selectedTruckId!)}
+        />
+      )}
 
       {/* Fullscreen toggle button */}
       <button

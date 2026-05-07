@@ -13,12 +13,13 @@ interface CctvMapProps {
 
 type L = typeof import("leaflet");
 
-const PINPOINT: Record<string, { url: string; size: [number, number] }> = {
-  SPBU:     { url: "/spbuiconpinpoint.png",     size: [28, 36] },
-  Kilang:   { url: "/kilangiconpinpoint.png",   size: [28, 36] },
-  Storage:  { url: "/storageiconpinpoint.png",  size: [28, 36] },
-  Terminal: { url: "/terminaliconpinpoint.png", size: [28, 36] },
-  Upstream: { url: "/upstreamiconpinpoint.png", size: [28, 36] },
+/** Icon sizes — Terminal, Upstream, Kilang, Storage are larger & more prominent */
+const PINPOINT: Record<string, { url: string; size: [number, number]; color: string; labelPermanent?: boolean }> = {
+  SPBU:     { url: "/spbuiconpinpoint.png",     size: [32, 42],  color: "#22c55e" },
+  Kilang:   { url: "/kilangiconpinpoint.png",   size: [40, 52],  color: "#f97316", labelPermanent: true },
+  Storage:  { url: "/storageiconpinpoint.png",  size: [40, 52],  color: "#8b5cf6", labelPermanent: true },
+  Terminal: { url: "/terminaliconpinpoint.png", size: [46, 58],  color: "#14b8a6", labelPermanent: true },
+  Upstream: { url: "/upstreamiconpinpoint.png", size: [46, 58],  color: "#3b82f6", labelPermanent: true },
 };
 
 function isVisible(loc: CctvLocation, cat: string, reg: string) {
@@ -81,30 +82,42 @@ export default function CctvMap({
 
       Lx.control.zoom({ position: "bottomright" }).addTo(map);
 
-      // Custom tooltip style
+      // Custom tooltip & label styles
       const style = document.createElement("style");
       style.textContent = `
         .cctv-tooltip {
           background: rgba(10,15,25,.94) !important;
           border: 1px solid rgba(255,255,255,.14) !important;
-          color: #fff !important; border-radius: 7px !important;
-          padding: 4px 9px !important; font-size: 11px !important;
-          font-family: Inter, sans-serif !important;
-          box-shadow: 0 4px 14px rgba(0,0,0,.45) !important;
+          color: #fff !important; border-radius: 8px !important;
+          padding: 5px 11px !important; font-size: 13px !important;
+          font-family: Inter, sans-serif !important; font-weight: 600 !important;
+          box-shadow: 0 4px 18px rgba(0,0,0,.5) !important;
           white-space: nowrap !important; pointer-events: none !important;
         }
         .cctv-tooltip::before { display: none !important; }
+
+        .cctv-label {
+          background: rgba(10,15,25,.82) !important;
+          border: 1px solid rgba(255,255,255,.18) !important;
+          color: #fff !important; border-radius: 6px !important;
+          padding: 3px 8px !important; font-size: 11px !important;
+          font-family: Inter, sans-serif !important; font-weight: 700 !important;
+          white-space: nowrap !important; pointer-events: none !important;
+          box-shadow: 0 2px 8px rgba(0,0,0,.5) !important;
+        }
+        .cctv-label::before { display: none !important; }
+
         .cctv-selected-ring {
-          width: 44px; height: 44px;
-          border: 2px solid rgba(59,130,246,.7);
+          width: 52px; height: 52px;
+          border: 2.5px solid rgba(59,130,246,.75);
           border-radius: 50%;
-          animation: cctvPulse 1.5s ease-out infinite;
+          animation: cctvPulse 1.4s ease-out infinite;
           position: absolute;
           top: 50%; left: 50%;
           transform: translate(-50%, -50%);
           pointer-events: none;
         }
-        @keyframes cctvPulse{0%{transform:translate(-50%,-50%) scale(1);opacity:.8}100%{transform:translate(-50%,-50%) scale(2.2);opacity:0}}
+        @keyframes cctvPulse{0%{transform:translate(-50%,-50%) scale(1);opacity:.85}100%{transform:translate(-50%,-50%) scale(2.4);opacity:0}}
       `;
       document.head.appendChild(style);
 
@@ -112,15 +125,31 @@ export default function CctvMap({
       locationsRef.current.forEach((loc) => {
         const cfg = PINPOINT[loc.type] ?? PINPOINT.SPBU;
         const icon = Lx.icon({
-          iconUrl:    cfg.url,
-          iconSize:   cfg.size,
-          iconAnchor: [cfg.size[0] / 2, cfg.size[1]],
+          iconUrl:     cfg.url,
+          iconSize:    cfg.size,
+          iconAnchor:  [cfg.size[0] / 2, cfg.size[1]],
           popupAnchor: [0, -cfg.size[1]],
         });
 
         const marker = Lx.marker([loc.lat, loc.lng], { icon })
-          .addTo(map)
-          .bindTooltip(loc.name, { permanent: false, direction: "top", offset: [0, -cfg.size[1]], className: "cctv-tooltip" });
+          .addTo(map);
+
+        // Permanent label for terminal/upstream/kilang/storage, hover tooltip otherwise
+        if (cfg.labelPermanent) {
+          marker.bindTooltip(loc.name, {
+            permanent: false,
+            direction: "top",
+            offset: [0, -cfg.size[1]],
+            className: "cctv-tooltip",
+          });
+        } else {
+          marker.bindTooltip(loc.name, {
+            permanent: false,
+            direction: "top",
+            offset: [0, -cfg.size[1]],
+            className: "cctv-tooltip",
+          });
+        }
 
         marker.on("click", () => onSelectRef.current(loc.id));
         markers.current.set(loc.id, marker);

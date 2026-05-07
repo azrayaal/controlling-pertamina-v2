@@ -48,66 +48,75 @@ const REGIONS: { key: string; label: string }[] = [
   { key: "Papua",      label: "Papua" },
 ];
 
-const CAM_BG = ["#0d2137", "#0d2a1e", "#1e1533", "#1e1a00", "#122a2a", "#0d1a3b"];
+const CCTV_IMAGES = [
+  "/cctv/cctv1.png", "/cctv/cctv2.png", "/cctv/cctv3.png",
+  "/cctv/cctv4.png", "/cctv/cctv5.png", "/cctv/cctv6.png",
+  "/cctv/cctv7.png", "/cctv/cctv8.png", "/cctv/cctv9.png",
+];
 
 // ── Camera feed simulation ────────────────────────────────────────────────────
 function CamFeed({ cam, locationName }: { cam: { id: string; name: string; status: string }; locationName: string }) {
-  const bgIdx = parseInt(cam.id.replace(/\D/g, "")) % CAM_BG.length;
+  const idx     = parseInt(cam.id.replace(/\D/g, "")) % CCTV_IMAGES.length;
+  const imgSrc  = CCTV_IMAGES[idx];
   const isAlert   = cam.status === "Alert";
   const isOffline = cam.status === "Offline";
-  const ts = `${String(10 + bgIdx).padStart(2, "0")}:${String(bgIdx * 7 % 60).padStart(2, "0")}:${String(bgIdx * 13 % 60).padStart(2, "0")}`;
+  const ts = `${String(10 + idx).padStart(2, "0")}:${String(idx * 7 % 60).padStart(2, "0")}:${String(idx * 13 % 60).padStart(2, "0")}`;
 
   return (
     <div
-      className="relative rounded-xl overflow-hidden"
-      style={{ background: CAM_BG[bgIdx], aspectRatio: "16/9" }}
+      className="relative rounded-xl overflow-hidden bg-slate-900"
+      style={{ aspectRatio: "16/9" }}
     >
-      {/* Scanline overlay */}
-      <div className="absolute inset-0 pointer-events-none opacity-20"
-        style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.3) 2px,rgba(0,0,0,.3) 4px)" }} />
+      {/* CCTV image feed */}
+      {!isOffline && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imgSrc}
+          alt={cam.name}
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ opacity: isAlert ? 0.75 : 0.88 }}
+        />
+      )}
+
+      {/* Scanline overlay for realism */}
+      <div className="absolute inset-0 pointer-events-none opacity-10"
+        style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.4) 2px,rgba(0,0,0,.4) 4px)" }} />
 
       {isOffline ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80">
-          <WifiOff size={20} className="text-slate-500 mb-1" />
-          <p className="text-slate-500 text-[10px]">Offline</p>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90">
+          <WifiOff size={22} className="text-slate-500 mb-2" />
+          <p className="text-slate-400 text-sm font-medium">Offline</p>
         </div>
       ) : (
         <>
-          {/* Alert tint */}
-          {isAlert && <div className="absolute inset-0 bg-red-900/20 pointer-events-none" />}
+          {/* Alert red tint */}
+          {isAlert && <div className="absolute inset-0 bg-red-900/25 pointer-events-none" />}
 
           {/* Top-left badge */}
-          <div className="absolute top-2 left-2 flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold"
-            style={{ background: isAlert ? "rgba(239,68,68,.9)" : "rgba(16,185,129,.9)", color: "#fff" }}>
-            <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+          <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2 py-1 rounded-md font-bold text-xs"
+            style={{ background: isAlert ? "rgba(220,38,38,.92)" : "rgba(16,185,129,.92)", color: "#fff" }}>
+            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
             {isAlert ? "ALERT" : "LIVE"}
           </div>
 
           {/* Timestamp top-right */}
-          <div className="absolute top-2 right-2 text-[9px] font-mono text-emerald-400 font-semibold">
+          <div className="absolute top-2 right-2 font-mono text-xs text-emerald-300 font-semibold drop-shadow">
             {ts}
           </div>
 
-          {/* Alert icon */}
+          {/* Alert overlay icon */}
           {isAlert && (
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-              <AlertTriangle size={24} className="text-red-400 opacity-40" />
-            </div>
-          )}
-
-          {/* Camera icon (subtle) */}
-          {!isAlert && (
-            <div className="absolute inset-0 flex items-center justify-center opacity-10">
-              <Camera size={32} className="text-white" />
+              <AlertTriangle size={28} className="text-red-400 drop-shadow-lg opacity-80" />
             </div>
           )}
         </>
       )}
 
       {/* Bottom labels */}
-      <div className="absolute bottom-0 left-0 right-0 px-2 py-1.5 bg-gradient-to-t from-black/80 to-transparent">
-        <p className="text-white text-[9px] font-semibold truncate">{cam.name}</p>
-        <p className="text-white/50 text-[8px] truncate">{locationName}</p>
+      <div className="absolute bottom-0 left-0 right-0 px-2.5 py-2 bg-gradient-to-t from-black/80 to-transparent">
+        <p className="text-white text-xs font-semibold truncate">{cam.name}</p>
+        <p className="text-white/60 text-[11px] truncate">{locationName}</p>
       </div>
     </div>
   );

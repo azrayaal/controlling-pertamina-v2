@@ -26,8 +26,8 @@
   --input-bg: #f8fafc;
   --input-border: #e2e8f0;
 
-  /* Base font size — slightly larger for elder-friendly readability */
-  font-size: 16px;
+  /* Base font size — elder-friendly: 18px root, ~12.5% larger than browser default */
+  font-size: 18px;
 }
 
 .dark {
@@ -60,9 +60,28 @@ body {
   color: var(--foreground);
   font-family: 'Inter', Arial, Helvetica, sans-serif;
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: 1.65;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
+
+/* ── Elder-friendly font scale overrides ────────────────────────────── */
+/* Bump up ultra-small text classes so nothing reads below 12px on a 18px root */
+.text-\[8px\]  { font-size: 11px !important; }
+.text-\[9px\]  { font-size: 12px !important; }
+.text-\[10px\] { font-size: 13px !important; }
+.text-\[11px\] { font-size: 14px !important; }
+.text-\[12px\] { font-size: 14px !important; }
+
+/* xs (12px default → 14px), sm (14px → 15px), base (16px → 17px) */
+.text-xs  { font-size: 0.8rem  !important; line-height: 1.5 !important; }
+.text-sm  { font-size: 0.9rem  !important; line-height: 1.55 !important; }
+.text-base { font-size: 1rem   !important; }
+
+/* Sidebar, header, nav labels — keep readable but not huge */
+.text-lg  { font-size: 1.15rem !important; }
+.text-xl  { font-size: 1.3rem  !important; }
+.text-2xl { font-size: 1.5rem  !important; }
+.text-3xl { font-size: 1.9rem  !important; }
 
 /* ── Dark mode bulk overrides ──────────────────────────────────────── */
 
