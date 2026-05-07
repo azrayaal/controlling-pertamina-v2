@@ -11,7 +11,6 @@ export default function DashboardPage() {
       <div className="space-y-4">
         <StatsCards />
         <DistributionChart />
-
         {/* Live Tracking + Live Alerts — stacked on mobile, side-by-side on xl */}
         <div className="flex flex-col xl:flex-row gap-4 xl:h-[660px]">
           {/* Tracking card fills remaining width */}

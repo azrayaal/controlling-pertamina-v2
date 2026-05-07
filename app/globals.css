@@ -239,3 +239,28 @@ body {
 .dark .map-placeholder {
   background: linear-gradient(135deg, #1a3a5c 0%, #1e4a72 30%, #224f7a 60%, #1a3a5c 100%);
 }
+
+/* Sea wave animation for vessel 3D view */
+@keyframes seaWave {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Sea ripple circles */
+@keyframes ripple {
+  0%   { transform: scale(0.6); opacity: 0.5; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+/* Road scroll for truck 3D view */
+@keyframes roadScroll {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+/* Speed lines for truck view */
+@keyframes speedLine {
+  0%   { opacity: 0; transform: scaleY(0) translateY(-100%); }
+  50%  { opacity: 1; }
+  100% { opacity: 0; transform: scaleY(1) translateY(100%); }
+}

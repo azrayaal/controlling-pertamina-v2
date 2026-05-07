@@ -6,7 +6,7 @@ import {
   Search, Ship, Truck, MessageSquare, Phone, Video,
   X, Anchor, Camera, AlertTriangle, Filter, Layers,
   Navigation, MapPin, Clock, Package, ChevronRight, ChevronDown,
-  Activity, Zap, User, Fuel,
+  Activity, Zap, User, Fuel, Mouse,
 } from "lucide-react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
@@ -468,13 +468,13 @@ function VesselDetailModal({
         </div>
 
         {/* CCTV */}
-        {v.cctv && <CctvGrid cams={v.cctv} />}
+        {/* {v.cctv && <CctvGrid cams={v.cctv} />} */}
 
-        <div className="px-4 py-3">
+        {/* <div className="px-4 py-3">
           <a href="/live-cctv" className="w-full flex items-center justify-center gap-1.5 h-9 rounded-xl bg-slate-800 text-white text-[11px] font-bold hover:bg-slate-700 transition-colors">
             <Video size={12} /> Live CCTV Full View
           </a>
-        </div>
+        </div> */}
       </div>
 
       {/* 3D View area */}
@@ -492,35 +492,99 @@ function VesselDetailModal({
           </span>
         </div>
 
-        {/* 3D Ship — interactive 360° Three.js model */}
-        <div className="flex-1 flex items-center justify-center p-4">
-          <Model3DViewer
-            type="tanker"
-            width={520}
-            height={300}
-            label={v.name}
-            subtitle={`${v.port} → ${v.destPort}`}
-            className="shadow-2xl"
+        {/* 3D Ship — Spline interactive model with sea animation */}
+        <div className="flex-1 relative overflow-hidden">
+          <iframe
+            src="https://my.spline.design/untitled-DOCArGP6oKCEsshtthz8CMc7/"
+            frameBorder="0"
+            width="100%"
+            height="100%"
+            className="absolute inset-0 w-full h-full"
+            style={{ cursor: "default" }}
           />
+          {/* Sea wave atmosphere overlay */}
+          <div className="absolute inset-x-0 top-0 h-24 pointer-events-none z-10 overflow-hidden">
+            <svg
+              viewBox="0 0 1200 96"
+              preserveAspectRatio="none"
+              className="absolute top-0 left-0 w-[200%] h-full"
+              style={{
+                animation: "seaWave 6s linear infinite",
+                opacity: 0.18,
+              }}
+            >
+              <path
+                d="M0,48 C150,80 350,16 600,48 C850,80 1050,16 1200,48 L1200,0 L0,0 Z"
+                fill="#38bdf8"
+              />
+            </svg>
+            <svg
+              viewBox="0 0 1200 96"
+              preserveAspectRatio="none"
+              className="absolute top-0 left-0 w-[200%] h-full"
+              style={{
+                animation: "seaWave 9s linear infinite reverse",
+                opacity: 0.12,
+              }}
+            >
+              <path
+                d="M0,56 C200,24 400,80 600,56 C800,24 1000,80 1200,56 L1200,0 L0,0 Z"
+                fill="#0ea5e9"
+              />
+            </svg>
+          </div>
+          {/* Floating sea ripple dots */}
+          <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+            {[
+              { top: "15%", left: "8%",  size: 40, delay: "0s",   dur: "4s"  },
+              { top: "22%", left: "75%", size: 28, delay: "1.5s", dur: "5s"  },
+              { top: "10%", left: "45%", size: 50, delay: "0.8s", dur: "6s"  },
+              { top: "30%", left: "25%", size: 22, delay: "2.2s", dur: "4.5s"},
+              { top: "18%", left: "60%", size: 34, delay: "3s",   dur: "5.5s"},
+            ].map((r, i) => (
+              <div
+                key={i}
+                className="absolute rounded-full border border-sky-300/40"
+                style={{
+                  top: r.top, left: r.left,
+                  width: r.size, height: r.size,
+                  animation: `ripple ${r.dur} ${r.delay} ease-out infinite`,
+                  opacity: 0,
+                }}
+              />
+            ))}
+          </div>
+          {/* Cursor visible indicator */}
+          <div className="absolute bottom-3 right-3 z-20 pointer-events-none flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-lg px-2.5 py-1.5 border border-white/20">
+            <Mouse size={10} className="text-white/70" />
+            <span className="text-white/70 text-[9px] font-semibold">360° Interaktif</span>
+          </div>
+          {/* Sea label */}
+          <div className="absolute top-3 left-3 z-20 pointer-events-none flex items-center gap-1.5 bg-sky-500/20 backdrop-blur-sm rounded-lg px-2 py-1 border border-sky-400/30">
+            <Anchor size={9} className="text-sky-300" />
+            <span className="text-sky-200 text-[9px] font-bold tracking-wide">PERAIRAN LEPAS</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+          </div>
         </div>
 
-        {/* CCTV bottom bar */}
-        <div className="flex-shrink-0 bg-black/40 backdrop-blur-sm border-t border-white/10 p-4">
-          <div className="flex items-center justify-between mb-3">
+        {/* CCTV bottom bar — dark theme */}
+        <div className="flex-shrink-0 bg-white m-4 rounded-xl p-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Camera size={14} className="text-white/70" />
-              <p className="text-white font-semibold text-sm">Live CCTV — {v.name}</p>
-              <span className="text-[8px] text-white/50">{v.cctv?.length ?? 0} kamera aktif · 1 offline</span>
+              <Camera size={14} className="text-sky-300" />
+              <p className="text-black font-semibold text-sm">Live CCTV — {v.name}</p>
+              <span className="text-[8px] text-black/50">{v.cctv?.length ?? 0} kamera aktif · 1 offline</span>
             </div>
-            <a href="/live-cctv" className="flex items-center gap-1 text-[10px] text-red-400 font-bold">
+            <a href="/live-cctv" className="flex items-center gap-1 text-[10px] text-red-400 font-bold hover:text-red-300 transition-colors">
               <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" /> LIVE FEED
             </a>
           </div>
-          <div className="grid grid-cols-4 gap-2">
+        </div>
+          <div className="grid grid-cols-4 gap-2 px-4 pb-4">
             {(v.cctv ?? []).slice(0, 4).map((cam, i) => (
               <div
                 key={cam.id}
-                className="relative rounded-lg overflow-hidden"
+                className="relative rounded-xl overflow-hidden "
                 style={{ background: CAM_COLORS[i % CAM_COLORS.length], aspectRatio: "16/9" }}
               >
                 <div className="absolute inset-0 pointer-events-none"
@@ -540,6 +604,312 @@ function VesselDetailModal({
               </div>
             ))}
           </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 3D Truck Detail Modal ──────────────────────────────────────────────────────
+function TruckDetailModal({
+  truckId,
+  onClose,
+}: {
+  truckId: string;
+  onClose: () => void;
+}) {
+  const t = trucks.find((x) => x.id === truckId);
+  if (!t) return null;
+  const { label: statusLabel, style: statusStyle } = truckStatusLabel(t);
+
+  const TRUCK_STAGES = [
+    { label: "Depot Asal",   short: "Depot"   },
+    { label: "Loading",      short: "Loading" },
+    { label: "In Transit",   short: "Transit" },
+    { label: "Delivery",     short: "Delivery"},
+    { label: "SPBU Tujuan",  short: "SPBU"    },
+  ];
+  const truckStage = t.phase === "In Transit" ? 2 : t.trackingStatus === "idle" ? 0 : 1;
+
+  const FUEL_COLORS: Record<string, string> = {
+    "Pertalite":     "#10b981",
+    "Pertamax":      "#3b82f6",
+    "Pertamina DEX": "#f59e0b",
+    "Solar":         "#ef4444",
+    "LPG":           "#8b5cf6",
+  };
+
+  return (
+    <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm flex">
+      {/* Left detail panel */}
+      <div className="w-[280px] flex-shrink-0 bg-white flex flex-col overflow-y-auto">
+        {/* Header with truck photo */}
+        <div className="relative w-full flex-shrink-0 overflow-hidden" style={{ height: 160 }}>
+          <Image src="/truck1.png" alt={t.plateNumber} fill style={{ objectFit: "cover", objectPosition: "center" }} />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/60" />
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 w-7 h-7 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors"
+          >
+            <X size={13} className="text-white" />
+          </button>
+          <div className="absolute bottom-3 left-3">
+            <div className="flex gap-1.5 mb-1">
+              <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${statusStyle.bg} ${statusStyle.text}`}>
+                {statusLabel}
+              </span>
+            </div>
+            <p className="text-white font-bold text-base drop-shadow">{t.plateNumber}</p>
+            <p className="text-white/70 text-[9px]">Pertamina Fuel Truck · {t.idCode}</p>
+          </div>
+        </div>
+
+        {/* Route — Origin / Destination */}
+        <div className="px-4 py-3 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <div>
+              <p className="text-[8px] text-slate-400 uppercase">Origin</p>
+              <p className="text-sm font-bold text-slate-800 leading-tight">{t.origin.split(" ").slice(-1)[0]}</p>
+              <p className="text-[10px] text-slate-500 leading-tight">{t.origin}</p>
+            </div>
+            <div className="flex-1 flex items-center gap-1">
+              <div className="flex-1 h-px bg-slate-200" style={{ borderTop: "1px dashed #cbd5e1" }} />
+              <div className="w-5 h-5 rounded-full bg-[#1a1a2e] flex items-center justify-center flex-shrink-0">
+                <Navigation size={9} className="text-white" />
+              </div>
+              <div className="flex-1 h-px bg-slate-200" />
+            </div>
+            <div className="text-right">
+              <p className="text-[8px] text-slate-400 uppercase">Destination</p>
+              <p className="text-sm font-bold text-slate-800 leading-tight">{t.destination.split(" ").slice(-1)[0]}</p>
+              <p className="text-[10px] text-slate-500 leading-tight">{t.destination}</p>
+            </div>
+          </div>
+          <p className="text-[9px] text-slate-400 mt-2">Pertamina Fuel Truck · {t.phase}</p>
+          <p className="text-[9px] text-slate-400">ID: 2026-T0-{t.idCode}</p>
+        </div>
+
+        {/* Stats 2×2 */}
+        <div className="grid grid-cols-2 border-b border-slate-100">
+          {[
+            { label: "Load Volume", value: t.load },
+            { label: "ETA",         value: t.eta },
+            { label: "Drive Time",  value: t.duration },
+            { label: "Distance",    value: t.distance },
+          ].map((s, i) => (
+            <div key={s.label} className={`px-3 py-2 ${i % 2 === 0 ? "border-r border-slate-100" : ""} ${i < 2 ? "border-b border-slate-100" : ""}`}>
+              <p className="text-[8px] text-slate-400 uppercase">{s.label}</p>
+              <p className="text-[12px] font-bold text-slate-800">{s.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Supply Chain Journey */}
+        <div className="px-4 py-3 border-b border-slate-100">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[9px] text-slate-400 font-bold uppercase">Supply Chain Journey</p>
+            <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded-full ${statusStyle.bg} ${statusStyle.text}`}>● {statusLabel}</span>
+          </div>
+          <div className="flex items-center gap-0.5">
+            {TRUCK_STAGES.map((stage, idx) => {
+              const isDone    = idx < truckStage;
+              const isCurrent = idx === truckStage;
+              return (
+                <div key={stage.label} className="flex items-center gap-0.5 flex-1 min-w-0">
+                  <div className="flex flex-col items-center flex-1 min-w-0">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                      isDone ? "bg-emerald-500" : isCurrent ? "bg-blue-500" : "bg-slate-200"
+                    }`}>
+                      {isDone
+                        ? <svg viewBox="0 0 10 10" width="9" height="9"><path d="M2 5l2 2 4-3" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round"/></svg>
+                        : isCurrent
+                          ? <Navigation size={8} className="text-white" />
+                          : <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />}
+                    </div>
+                    <p className={`text-[7px] text-center mt-0.5 font-semibold leading-tight ${isDone ? "text-emerald-600" : isCurrent ? "text-blue-600" : "text-slate-400"}`}>
+                      {stage.short}
+                    </p>
+                  </div>
+                  {idx < TRUCK_STAGES.length - 1 && (
+                    <div className={`h-px flex-1 mb-3 ${isDone ? "bg-emerald-400" : "bg-slate-200"}`} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Driver — matching Captain style */}
+        <div className="px-4 py-3 border-b border-slate-100">
+          <p className="text-[9px] text-slate-400 font-bold uppercase mb-2">Driver</p>
+          <div className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-full bg-slate-700 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+              {t.driver.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+            </div>
+            <div className="flex-1">
+              <p className="text-[11px] font-semibold text-slate-800">{t.driver}</p>
+              <p className="text-[9px] text-slate-400">{t.idCode}-DRV · {t.driverPhone}</p>
+            </div>
+            <div className="relative w-10 h-10 flex-shrink-0">
+              <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                <circle cx="18" cy="18" r="15" fill="none" stroke="#e2e8f0" strokeWidth="3"/>
+                <circle cx="18" cy="18" r="15" fill="none" stroke="#10b981" strokeWidth="3"
+                  strokeDasharray={`${t.rating / 5 * 94.25} 94.25`} strokeLinecap="round"/>
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[10px] font-bold text-slate-700">{t.rating}</span>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-2">
+            <button className="flex-1 flex items-center justify-center gap-1 h-7 rounded-lg bg-slate-800 text-white text-[10px] font-semibold hover:bg-slate-700">
+              <MessageSquare size={10} /> Chat
+            </button>
+            <button className="flex-1 flex items-center justify-center gap-1 h-7 rounded-lg border border-slate-200 text-slate-600 text-[10px] font-semibold hover:bg-slate-50">
+              <Phone size={10} /> Call
+            </button>
+          </div>
+        </div>
+
+        {/* Muatan BBM — matching cargo breakdown style */}
+        {t.fuelLoad.length > 0 && (
+          <div className="px-4 py-3 border-b border-slate-100">
+            <p className="text-[9px] text-slate-400 font-bold uppercase mb-2">Muatan BBM</p>
+            <p className="text-xs font-bold text-slate-700 mb-1.5">Total {t.load}</p>
+            <div className="flex flex-col gap-1.5">
+              {t.fuelLoad.map((f) => {
+                const color = FUEL_COLORS[f.type] ?? "#64748b";
+                return (
+                  <div key={f.type} className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: color }} />
+                      <span className="text-[10px] text-slate-600">{f.type}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full rounded-full" style={{ background: color, width: "65%" }} />
+                      </div>
+                      <span className="text-[9px] font-semibold text-slate-700">{f.amount}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Truck Specs */}
+        <div className="px-4 py-3 border-b border-slate-100">
+          <p className="text-[9px] text-slate-400 font-bold uppercase mb-2">Truck Specs</p>
+          <div className="grid grid-cols-3 gap-1.5">
+            {[
+              { label: "Plate",    value: t.plateNumber },
+              { label: "Distance", value: t.distance },
+              { label: "Status",   value: statusLabel },
+            ].map((s) => (
+              <div key={s.label} className="bg-slate-50 rounded-lg px-1.5 py-2 text-center">
+                <p className="text-[8px] text-slate-400">{s.label}</p>
+                <p className="text-[9px] font-bold text-slate-700 leading-tight">{s.value}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Right — 3D view */}
+      <div className="flex-1 relative bg-gradient-to-b from-[#1a1a2e] to-[#16213e] flex flex-col">
+        {/* Top badge */}
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2 border border-white/20">
+          <Truck size={14} className="text-white/80" />
+          <div>
+            <p className="text-white text-[10px] font-bold">3D Live View · {t.plateNumber}</p>
+            <p className="text-white/60 text-[9px]">{t.origin} → {t.destination}</p>
+          </div>
+          <span className="flex items-center gap-1 ml-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-emerald-400 text-[9px] font-bold">Live</span>
+          </span>
+        </div>
+
+        {/* 3D Truck — Spline */}
+        <div className="flex-1 relative overflow-hidden">
+          <iframe
+            src="https://my.spline.design/untitled-1ELPPwDZ4j0G5pTbKop5qkrs/"
+            frameBorder="0"
+            width="100%"
+            height="100%"
+            className="absolute inset-0 w-full h-full"
+            style={{ cursor: "default" }}
+          />
+          {/* Road speed lines */}
+          <div className="absolute inset-0 pointer-events-none z-10 overflow-hidden">
+            {[8, 25, 42, 58, 75, 92].map((left, i) => (
+              <div
+                key={i}
+                className="absolute top-0 bottom-0 w-px"
+                style={{
+                  left: `${left}%`,
+                  background: "linear-gradient(to bottom, transparent, rgba(255,200,50,0.2), transparent)",
+                  animation: `speedLine 1s ${i * 0.16}s linear infinite`,
+                }}
+              />
+            ))}
+          </div>
+          {/* Center lane dash */}
+          <div className="absolute inset-0 pointer-events-none z-10 flex flex-col items-center justify-end pb-4 overflow-hidden">
+            <div className="flex flex-col items-center gap-2" style={{ animation: "roadScroll 0.7s linear infinite" }}>
+              {Array.from({ length: 16 }).map((_, i) => (
+                <div key={i} className="w-0.5 h-5 bg-yellow-300/40 rounded-full flex-shrink-0" />
+              ))}
+            </div>
+          </div>
+          {/* Horizon glow */}
+          <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none z-10"
+            style={{ background: "linear-gradient(to top, rgba(26,26,46,0.8), transparent)" }} />
+          {/* Cursor indicator */}
+          <div className="absolute bottom-3 right-3 z-20 pointer-events-none flex items-center gap-1.5 bg-black/40 backdrop-blur-sm rounded-lg px-2.5 py-1.5 border border-white/20">
+            <Mouse size={10} className="text-white/70" />
+            <span className="text-white/70 text-[9px] font-semibold">360° Interaktif</span>
+          </div>
+          {/* Road label */}
+          <div className="absolute top-3 left-3 z-20 pointer-events-none flex items-center gap-1.5 bg-amber-500/20 backdrop-blur-sm rounded-lg px-2 py-1 border border-amber-400/30">
+            <Truck size={9} className="text-amber-300" />
+            <span className="text-amber-200 text-[9px] font-bold tracking-wide">JALAN RAYA · LIVE</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+          </div>
+        </div>
+
+        {/* CCTV bottom bar */}
+        <div className="flex-shrink-0 m-4 rounded-xl p-4 bg-white">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Camera size={14} className="text-amber-300" />
+              <p className="text-black font-semibold text-sm">Live CCTV — {t.plateNumber}</p>
+              <span className="text-[8px] black/50">{t.cctv?.length ?? 0} kamera aktif</span>
+            </div>
+            <a href="/live-cctv" className="flex items-center gap-1 text-[10px] text-red-400 font-bold hover:text-red-300 transition-colors">
+              <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" /> LIVE FEED
+            </a>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 gap-2 px-4 pb-4">
+          {(t.cctv ?? []).slice(0, 4).map((cam, i) => (
+            <div key={cam.id} className="relative rounded-xl overflow-hidden"
+              style={{ background: CAM_COLORS[i % CAM_COLORS.length], aspectRatio: "16/9" }}>
+              <div className="absolute inset-0 pointer-events-none"
+                style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.12) 2px,rgba(0,0,0,0.12) 4px)" }} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center p-2">
+                <Camera size={14} className="text-white/40 mb-1" />
+                <p className="text-white/70 text-[8px] font-semibold text-center">{cam.name}</p>
+              </div>
+              <div className="absolute top-1 right-1 flex items-center gap-0.5 bg-red-600/90 rounded px-1 py-0.5">
+                <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                <span className="text-white text-[6px] font-bold">{cam.status === "Alert" ? "ALRT" : "LIVE"}</span>
+              </div>
+              <div className="absolute bottom-1 left-1">
+                <span className="text-white/50 text-[7px]">Cam {i + 1}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -550,9 +920,11 @@ function VesselDetailModal({
 function TruckMapPopup({
   truckId,
   onClose,
+  onDetailClick,
 }: {
   truckId: string;
   onClose: () => void;
+  onDetailClick: () => void;
 }) {
   const t = trucks.find((x) => x.id === truckId);
   if (!t) return null;
@@ -653,9 +1025,16 @@ function TruckMapPopup({
         </div>
       )}
 
-      <div className="px-3 py-3">
-        <a href="/live-cctv" className="w-full flex items-center justify-center gap-1.5 h-8 rounded-xl bg-slate-800 text-white text-[10px] font-bold hover:bg-slate-700">
-          <Video size={11} /> Live CCTV
+      {/* Actions */}
+      <div className="px-3 py-3 flex gap-2 flex-shrink-0">
+        <button
+          onClick={onDetailClick}
+          className="flex-1 flex items-center justify-center gap-1.5 h-8 rounded-xl bg-[#1a1a2e] text-white text-[10px] font-bold hover:bg-[#2d2d50] transition-colors"
+        >
+          <Layers size={11} /> 3D Detail View
+        </button>
+        <a href="/live-cctv" className="flex items-center justify-center gap-1 h-8 w-14 rounded-xl border border-slate-200 text-slate-600 text-[10px] font-semibold hover:bg-slate-50 flex-shrink-0">
+          <Video size={11} />
         </a>
       </div>
     </div>
@@ -667,8 +1046,9 @@ export default function LiveTrackingPage() {
   const [activeTab, setActiveTab]     = useState<ActiveTab>("all");
   const [mapType, setMapType]         = useState<MapType>("street");
   const [searchQ, setSearchQ]         = useState("");
-  const [selected, setSelected]       = useState<SelectedItem>(null);
-  const [showDetail, setShowDetail]   = useState(false);
+  const [selected, setSelected]           = useState<SelectedItem>(null);
+  const [showDetail, setShowDetail]       = useState(false);
+  const [showTruckDetail, setShowTruckDetail] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const toggleRowExpand = useCallback((id: string) => {
@@ -682,10 +1062,12 @@ export default function LiveTrackingPage() {
   const handleVesselClick = useCallback((id: string) => {
     setSelected((prev) => (prev?.type === "vessel" && prev.id === id ? null : { type: "vessel", id }));
     setShowDetail(false);
+    setShowTruckDetail(false);
   }, []);
   const handleTruckClick = useCallback((id: string) => {
     setSelected((prev) => (prev?.type === "truck" && prev.id === id ? null : { type: "truck", id }));
     setShowDetail(false);
+    setShowTruckDetail(false);
   }, []);
 
   const selectedVesselId = selected?.type === "vessel" ? selected.id : null;
@@ -865,6 +1247,7 @@ export default function LiveTrackingPage() {
             <TruckMapPopup
               truckId={selected.id}
               onClose={() => setSelected(null)}
+              onDetailClick={() => setShowTruckDetail(true)}
             />
           )}
         </div>
@@ -990,6 +1373,19 @@ export default function LiveTrackingPage() {
                                   </div>
                                 </div>
                               )}
+                              <div className="mt-3 flex gap-2">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setSelected({ type: "vessel", id: v.id }); setShowDetail(true); }}
+                                  className="flex items-center gap-1.5 h-7 px-3 rounded-lg bg-[#1e2d4d] text-white text-[10px] font-bold hover:bg-[#2d3f63] transition-colors"
+                                >
+                                  <Layers size={10} /> 3D Detail View
+                                </button>
+                                <a href="/live-cctv"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center gap-1.5 h-7 px-3 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-[10px] font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                  <Video size={10} /> Live CCTV
+                                </a>
+                              </div>
                             </td>
                           </tr>
                         )}
@@ -1090,6 +1486,19 @@ export default function LiveTrackingPage() {
                                   </div>
                                 </div>
                               )}
+                              <div className="mt-3 flex gap-2">
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); setSelected({ type: "truck", id: t.id }); setShowTruckDetail(true); }}
+                                  className="flex items-center gap-1.5 h-7 px-3 rounded-lg bg-[#1a1a2e] text-white text-[10px] font-bold hover:bg-[#2d2d50] transition-colors"
+                                >
+                                  <Layers size={10} /> 3D Detail View
+                                </button>
+                                <a href="/live-cctv"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center gap-1.5 h-7 px-3 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 text-[10px] font-semibold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+                                  <Video size={10} /> Live CCTV
+                                </a>
+                              </div>
                             </td>
                           </tr>
                         )}
@@ -1104,11 +1513,17 @@ export default function LiveTrackingPage() {
         </div>
       </div>
 
-      {/* ── 3D Detail Modal ───────────────────────────────────────────────────── */}
+      {/* ── 3D Detail Modals ──────────────────────────────────────────────────── */}
       {showDetail && selectedVesselId && (
         <VesselDetailModal
           vesselId={selectedVesselId}
           onClose={() => { setShowDetail(false); setSelected(null); }}
+        />
+      )}
+      {showTruckDetail && selectedTruckId && (
+        <TruckDetailModal
+          truckId={selectedTruckId}
+          onClose={() => { setShowTruckDetail(false); setSelected(null); }}
         />
       )}
     </DashboardLayout>
