@@ -49,9 +49,8 @@ const REGIONS: { key: string; label: string }[] = [
 ];
 
 const CCTV_IMAGES = [
-  "/cctv/cctv1.png", "/cctv/cctv2.png", "/cctv/cctv3.png",
-  "/cctv/cctv4.png", "/cctv/cctv5.png", "/cctv/cctv6.png",
-  "/cctv/cctv7.png", "/cctv/cctv8.png", "/cctv/cctv9.png",
+  "/cctv/cctvvid1.mp4", "/cctv/cctvid2.mp4", "/cctv/cctvid3.mp4",
+  "/cctv/cctvid4.mp4",  "/cctv/cctvid5.mp4",
 ];
 
 // ── Camera feed simulation ────────────────────────────────────────────────────
@@ -67,12 +66,14 @@ function CamFeed({ cam, locationName }: { cam: { id: string; name: string; statu
       className="relative rounded-xl overflow-hidden bg-slate-900"
       style={{ aspectRatio: "16/9" }}
     >
-      {/* CCTV image feed */}
+      {/* CCTV video feed */}
       {!isOffline && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+        <video
           src={imgSrc}
-          alt={cam.name}
+          autoPlay
+          muted
+          loop
+          playsInline
           className="absolute inset-0 w-full h-full object-cover"
           style={{ opacity: isAlert ? 0.75 : 0.88 }}
         />

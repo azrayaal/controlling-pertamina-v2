@@ -273,6 +273,11 @@ const cctvFeeds = [
   { id: 6, label: "Flare Stack Monitor", live: true, cam: "C6" },
 ];
 
+const CCTV_VIDEOS = [
+  "/cctv/cctvvid1.mp4", "/cctv/cctvid2.mp4", "/cctv/cctvid3.mp4",
+  "/cctv/cctvid4.mp4",  "/cctv/cctvid5.mp4",
+];
+
 const anomalies = [
   {
     type: "warning",
@@ -799,35 +804,36 @@ export default function ProductionPage() {
                 </span>
               </div>
               <div className="p-3 grid grid-cols-2 gap-2">
-                {cctvFeeds.map((feed) => (
-                  <div key={feed.id} className="relative rounded-lg overflow-hidden bg-slate-800 h-24">
-                    <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
-                      {feed.signalLost ? (
-                        <div className="text-center">
-                          <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-1">
-                            <AlertTriangle size={14} className="text-red-400" />
-                          </div>
-                          <p className="text-[8px] text-red-400 font-semibold">SIGNAL LOST</p>
+                {cctvFeeds.map((feed, i) => (
+                  <div key={feed.id} className="relative rounded-lg overflow-hidden bg-slate-900 h-24">
+                    {!feed.signalLost && (
+                      <video
+                        src={CCTV_VIDEOS[i % CCTV_VIDEOS.length]}
+                        autoPlay muted loop playsInline
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    )}
+                    <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.1) 2px,rgba(0,0,0,0.1) 4px)" }} />
+                    {feed.signalLost && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/90">
+                        <div className="w-8 h-8 bg-red-500/20 rounded-full flex items-center justify-center mb-1">
+                          <AlertTriangle size={14} className="text-red-400" />
                         </div>
-                      ) : (
-                        <div className="text-center">
-                          <Video size={20} className="text-slate-500 mx-auto mb-1" />
-                          <p className="text-[9px] text-slate-400 px-2 text-center leading-tight">{feed.label}</p>
-                        </div>
-                      )}
-                    </div>
+                        <p className="text-[8px] text-red-400 font-semibold">SIGNAL LOST</p>
+                      </div>
+                    )}
                     {feed.live && (
                       <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
                         <span className="w-1 h-1 bg-white rounded-full animate-pulse" />
                         LIVE
                       </div>
                     )}
-                    <div className="absolute bottom-1 right-1.5 text-[8px] text-white/50">
-                      {feed.cam}
-                    </div>
-                    <div className="absolute bottom-1 left-2 text-[8px] text-white/40">
-                      11:52 WIB
-                    </div>
+                    {!feed.signalLost && (
+                      <div className="absolute bottom-0 inset-x-0 px-1.5 py-1 bg-gradient-to-t from-black/70 to-transparent">
+                        <p className="text-white/80 text-[7px] font-semibold truncate">{feed.label}</p>
+                      </div>
+                    )}
+                    <div className="absolute top-1.5 right-1.5 text-[7px] text-white/50 font-mono">{feed.cam}</div>
                   </div>
                 ))}
               </div>

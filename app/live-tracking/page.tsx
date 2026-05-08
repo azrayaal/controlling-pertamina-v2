@@ -70,8 +70,12 @@ const SUPPLY_CHAIN_STAGES = [
   { label: "SPBU Client",        short: "SPBU" },
 ];
 
-// ── CCTV Grid ──────────────────────────────────────────────────────────────────
-const CAM_COLORS = ["#1e3a5f", "#0f3d2e", "#3b1f5e", "#3b2a00"];
+// ── CCTV Grid ─────────────────────────────────────────────────────────────────
+const CCTV_VIDEOS = [
+  "/cctv/cctvvid1.mp4", "/cctv/cctvid2.mp4", "/cctv/cctvid3.mp4",
+  "/cctv/cctvid4.mp4",  "/cctv/cctvid5.mp4",
+];
+
 function CctvGrid({ cams }: { cams: { id: string; name: string; status: string }[] }) {
   return (
     <div className="px-4 py-3 border-b border-slate-100">
@@ -85,14 +89,17 @@ function CctvGrid({ cams }: { cams: { id: string; name: string; status: string }
         {cams.map((cam, i) => (
           <div
             key={cam.id}
-            className="relative rounded-lg overflow-hidden flex flex-col items-center justify-center"
-            style={{ background: CAM_COLORS[i % CAM_COLORS.length], aspectRatio: "16/9" }}
+            className="relative rounded-lg overflow-hidden bg-slate-900"
+            style={{ aspectRatio: "16/9" }}
           >
+            <video
+              src={CCTV_VIDEOS[i % CCTV_VIDEOS.length]}
+              autoPlay muted loop playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+            />
             <div className="absolute inset-0 pointer-events-none"
               style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.12) 2px,rgba(0,0,0,0.12) 4px)" }}
             />
-            <Camera size={12} className="text-white/50 mb-0.5" />
-            <p className="text-white/80 text-[7.5px] font-semibold text-center leading-tight px-1">{cam.name}</p>
             <div className="absolute top-1 right-1 flex items-center gap-0.5 bg-red-600/90 rounded px-1 py-0.5">
               <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
               <span className="text-white text-[6.5px] font-bold">LIVE</span>
@@ -102,6 +109,9 @@ function CctvGrid({ cams }: { cams: { id: string; name: string; status: string }
                 <AlertTriangle size={8} className="text-amber-400" />
               </div>
             )}
+            <div className="absolute bottom-0 inset-x-0 px-1 py-0.5 bg-gradient-to-t from-black/70 to-transparent">
+              <p className="text-white/80 text-[6.5px] font-semibold truncate">{cam.name}</p>
+            </div>
           </div>
         ))}
       </div>
@@ -584,22 +594,23 @@ function VesselDetailModal({
             {(v.cctv ?? []).slice(0, 4).map((cam, i) => (
               <div
                 key={cam.id}
-                className="relative rounded-xl overflow-hidden "
-                style={{ background: CAM_COLORS[i % CAM_COLORS.length], aspectRatio: "16/9" }}
+                className="relative rounded-xl overflow-hidden bg-slate-900"
+                style={{ aspectRatio: "16/9" }}
               >
+                <video
+                  src={CCTV_VIDEOS[i % CCTV_VIDEOS.length]}
+                  autoPlay muted loop playsInline
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
                 <div className="absolute inset-0 pointer-events-none"
                   style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.12) 2px,rgba(0,0,0,0.12) 4px)" }}
                 />
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-2">
-                  <Camera size={14} className="text-white/40 mb-1" />
-                  <p className="text-white/70 text-[8px] font-semibold text-center">{cam.name}</p>
-                </div>
                 <div className="absolute top-1 right-1 flex items-center gap-0.5 bg-red-600/90 rounded px-1 py-0.5">
                   <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
                   <span className="text-white text-[6px] font-bold">{cam.status === "Alert" ? "ALRT" : "LIVE"}</span>
                 </div>
-                <div className="absolute bottom-1 left-1">
-                  <span className="text-white/50 text-[7px]">Cam {i + 1}</span>
+                <div className="absolute bottom-0 inset-x-0 px-1 py-0.5 bg-gradient-to-t from-black/70 to-transparent">
+                  <p className="text-white/70 text-[6.5px] font-semibold truncate">{cam.name}</p>
                 </div>
               </div>
             ))}
@@ -893,20 +904,21 @@ function TruckDetailModal({
         </div>
         <div className="grid grid-cols-4 gap-2 px-4 pb-4">
           {(t.cctv ?? []).slice(0, 4).map((cam, i) => (
-            <div key={cam.id} className="relative rounded-xl overflow-hidden"
-              style={{ background: CAM_COLORS[i % CAM_COLORS.length], aspectRatio: "16/9" }}>
+            <div key={cam.id} className="relative rounded-xl overflow-hidden bg-slate-900"
+              style={{ aspectRatio: "16/9" }}>
+              <video
+                src={CCTV_VIDEOS[i % CCTV_VIDEOS.length]}
+                autoPlay muted loop playsInline
+                className="absolute inset-0 w-full h-full object-cover"
+              />
               <div className="absolute inset-0 pointer-events-none"
                 style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.12) 2px,rgba(0,0,0,0.12) 4px)" }} />
-              <div className="absolute inset-0 flex flex-col items-center justify-center p-2">
-                <Camera size={14} className="text-white/40 mb-1" />
-                <p className="text-white/70 text-[8px] font-semibold text-center">{cam.name}</p>
-              </div>
               <div className="absolute top-1 right-1 flex items-center gap-0.5 bg-red-600/90 rounded px-1 py-0.5">
                 <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
                 <span className="text-white text-[6px] font-bold">{cam.status === "Alert" ? "ALRT" : "LIVE"}</span>
               </div>
-              <div className="absolute bottom-1 left-1">
-                <span className="text-white/50 text-[7px]">Cam {i + 1}</span>
+              <div className="absolute bottom-0 inset-x-0 px-1 py-0.5 bg-gradient-to-t from-black/70 to-transparent">
+                <p className="text-white/70 text-[6.5px] font-semibold truncate">{cam.name}</p>
               </div>
             </div>
           ))}

@@ -42,6 +42,11 @@ const cctvFeeds = [
   { id: 5, label: "SPBU 3112345 — Forecourt", live: true },
 ];
 
+const CCTV_VIDEOS = [
+  "/cctv/cctvvid1.mp4", "/cctv/cctvid2.mp4", "/cctv/cctvid3.mp4",
+  "/cctv/cctvid4.mp4",  "/cctv/cctvid5.mp4",
+];
+
 const reconciliation = [
   { label: "Sisa Stok", value: "11,200.2 kL", change: "+2.1%", detail: "dari 11,977 kL TY", positive: true },
   { label: "Jumlah Jual", value: "18,500 kL", change: "-0.75%", detail: "dari 18,240 kL", positive: false },
@@ -145,26 +150,38 @@ export default function SpbuPage() {
               </span>
             </div>
             <div className="p-3 grid grid-cols-2 gap-2">
-              {cctvFeeds.slice(0, 4).map((feed) => (
-                <div key={feed.id} className="relative rounded-lg overflow-hidden bg-slate-800 h-24">
-                  <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
-                    <div className="text-center"><Video size={18} className="text-slate-500 mx-auto mb-1" /><p className="text-[8px] text-slate-400 px-1 leading-tight">{feed.label}</p></div>
-                  </div>
+              {cctvFeeds.slice(0, 4).map((feed, i) => (
+                <div key={feed.id} className="relative rounded-lg overflow-hidden bg-slate-900 h-24">
+                  <video
+                    src={CCTV_VIDEOS[i % CCTV_VIDEOS.length]}
+                    autoPlay muted loop playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.1) 2px,rgba(0,0,0,0.1) 4px)" }} />
                   {feed.live && (
                     <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
                       <span className="w-1 h-1 bg-white rounded-full animate-pulse" />LIVE
                     </div>
                   )}
-                  <div className="absolute bottom-1 right-1.5 text-[8px] text-white/40">14:52 WIB</div>
+                  <div className="absolute bottom-0 inset-x-0 px-1.5 py-1 bg-gradient-to-t from-black/70 to-transparent">
+                    <p className="text-white/80 text-[7px] font-semibold truncate">{feed.label}</p>
+                  </div>
+                  <div className="absolute top-1.5 right-1.5 text-[7px] text-white/50 font-mono">14:52</div>
                 </div>
               ))}
               {cctvFeeds[4] && (
-                <div className="col-span-2 relative rounded-lg overflow-hidden bg-slate-800 h-20">
-                  <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center">
-                    <div className="flex items-center gap-2"><Video size={16} className="text-slate-500" /><p className="text-[9px] text-slate-400">{cctvFeeds[4].label}</p></div>
-                  </div>
+                <div className="col-span-2 relative rounded-lg overflow-hidden bg-slate-900 h-20">
+                  <video
+                    src={CCTV_VIDEOS[4 % CCTV_VIDEOS.length]}
+                    autoPlay muted loop playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.1) 2px,rgba(0,0,0,0.1) 4px)" }} />
                   <div className="absolute top-1.5 left-1.5 flex items-center gap-1 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded">
                     <span className="w-1 h-1 bg-white rounded-full animate-pulse" />LIVE
+                  </div>
+                  <div className="absolute bottom-0 inset-x-0 px-1.5 py-1 bg-gradient-to-t from-black/70 to-transparent">
+                    <p className="text-white/80 text-[7px] font-semibold truncate">{cctvFeeds[4].label}</p>
                   </div>
                 </div>
               )}

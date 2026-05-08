@@ -9,9 +9,8 @@ import { cctvLocations } from "@/lib/mockData";
 const Model3DViewer = dynamic(() => import("@/components/3d/Model3DViewer"), { ssr: false });
 
 const CCTV_IMAGES = [
-  "/cctv/cctv1.png", "/cctv/cctv2.png", "/cctv/cctv3.png",
-  "/cctv/cctv4.png", "/cctv/cctv5.png", "/cctv/cctv6.png",
-  "/cctv/cctv7.png", "/cctv/cctv8.png", "/cctv/cctv9.png",
+  "/cctv/cctvvid1.mp4", "/cctv/cctvid2.mp4", "/cctv/cctvid3.mp4",
+  "/cctv/cctvid4.mp4",  "/cctv/cctvid5.mp4",
 ];
 
 type Vessel = (typeof VesselsType)[number];
@@ -448,11 +447,13 @@ function FullscreenVesselPanel({
         <div className="grid grid-cols-2 gap-1.5">
           {(v.cctv ?? []).map((cam, i) => (
             <div key={cam.id} className="relative rounded-lg overflow-hidden" style={{ aspectRatio: "16/9" }}>
-              <Image
+              <video
                 src={CCTV_IMAGES[i % CCTV_IMAGES.length]}
-                alt={cam.name}
-                fill
-                style={{ objectFit: "cover" }}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
               />
               <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px)" }} />
               <div className="absolute top-1 right-1 flex items-center gap-0.5 rounded px-1 py-0.5" style={{ background: "rgba(220,38,38,0.9)" }}>
@@ -620,11 +621,13 @@ function FullscreenTruckPanel({
         <div className="grid grid-cols-2 gap-1.5">
           {(t.cctv ?? []).map((cam, i) => (
             <div key={cam.id} className="relative rounded-lg overflow-hidden" style={{ aspectRatio: "16/9" }}>
-              <Image
+              <video
                 src={CCTV_IMAGES[(i + 4) % CCTV_IMAGES.length]}
-                alt={cam.name}
-                fill
-                style={{ objectFit: "cover" }}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover"
               />
               <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px)" }} />
               <div className="absolute top-1 right-1 flex items-center gap-0.5 rounded px-1 py-0.5" style={{ background: "rgba(220,38,38,0.9)" }}>

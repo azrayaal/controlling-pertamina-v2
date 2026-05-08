@@ -3,7 +3,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { trucks, vessels } from "@/lib/mockData";
 import {
-  MessageSquare, Phone, Video, ChevronDown, Camera, AlertTriangle,
+  MessageSquare, Phone, Video, ChevronDown, AlertTriangle,
   Ship, MapPin, Navigation, Package,
 } from "lucide-react";
 import { useState, useCallback } from "react";
@@ -46,7 +46,10 @@ const cargoColors: Record<string, string> = {
   LPG:                 "#a78bfa",
 };
 
-const camColors = ["#1e3a5f", "#0f3d2e", "#3b1f5e", "#3b2a00"];
+const CCTV_VIDEOS = [
+  "/cctv/cctvvid1.mp4", "/cctv/cctvid2.mp4", "/cctv/cctvid3.mp4",
+  "/cctv/cctvid4.mp4",  "/cctv/cctvid5.mp4",
+];
 
 function CctvGrid({ cams }: { cams: { id: string; name: string; status: string }[] }) {
   return (
@@ -64,20 +67,18 @@ function CctvGrid({ cams }: { cams: { id: string; name: string; status: string }
         {cams.map((cam, i) => (
           <div
             key={cam.id}
-            className="relative rounded-lg overflow-hidden flex flex-col items-center justify-center"
-            style={{ background: camColors[i % camColors.length], aspectRatio: "16/9" }}
+            className="relative rounded-lg overflow-hidden bg-slate-900"
+            style={{ aspectRatio: "16/9" }}
           >
+            <video
+              src={CCTV_VIDEOS[i % CCTV_VIDEOS.length]}
+              autoPlay muted loop playsInline
+              className="absolute inset-0 w-full h-full object-cover"
+            />
             <div
               className="absolute inset-0 pointer-events-none"
-              style={{
-                backgroundImage:
-                  "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px)",
-              }}
+              style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.12) 2px, rgba(0,0,0,0.12) 4px)" }}
             />
-            <Camera size={11} className="text-white/60 mb-0.5" />
-            <p className="text-white/80 text-[7px] font-semibold text-center leading-tight px-1">
-              {cam.name}
-            </p>
             <div className="absolute top-1 right-1 flex items-center gap-0.5 bg-red-600/90 rounded px-1 py-0.5">
               <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
               <span className="text-white text-[6px] font-bold">LIVE</span>
@@ -87,6 +88,9 @@ function CctvGrid({ cams }: { cams: { id: string; name: string; status: string }
                 <AlertTriangle size={8} className="text-amber-400" />
               </div>
             )}
+            <div className="absolute bottom-0 inset-x-0 px-1 py-0.5 bg-gradient-to-t from-black/70 to-transparent">
+              <p className="text-white/80 text-[6.5px] font-semibold truncate">{cam.name}</p>
+            </div>
           </div>
         ))}
       </div>

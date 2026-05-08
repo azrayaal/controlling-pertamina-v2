@@ -48,11 +48,10 @@ const FILTER_OPTIONS: { key: RouteFilter; label: string; icon: React.ReactNode; 
   { key: "truck",    label: "Truck",    icon: <Truck size={12}/>,    color: "#e63946" },
 ];
 
-// CCTV images from public/cctv/
+// CCTV videos from public/cctv/
 const CCTV_IMAGES = [
-  "/cctv/cctv1.png", "/cctv/cctv2.png", "/cctv/cctv3.png",
-  "/cctv/cctv4.png", "/cctv/cctv5.png", "/cctv/cctv6.png",
-  "/cctv/cctv7.png", "/cctv/cctv8.png", "/cctv/cctv9.png",
+  "/cctv/cctvvid1.mp4", "/cctv/cctvid2.mp4", "/cctv/cctvid3.mp4",
+  "/cctv/cctvid4.mp4",  "/cctv/cctvid5.mp4",
 ];
 
 export default function LogisticsPage() {
@@ -87,7 +86,7 @@ export default function LogisticsPage() {
               <div className="grid grid-cols-2 gap-2 mb-3">
                 {CCTV_IMAGES.slice(0, 4).map((src, i) => (
                   <div key={i} className="aspect-video rounded-lg overflow-hidden relative">
-                    <Image src={src} alt={`CCTV Truck ${i + 1}`} fill style={{ objectFit: "cover" }} />
+                    <video src={src} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
                     <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px)" }} />
                     <div className="absolute top-1 left-1 flex items-center gap-0.5 bg-red-600/90 rounded px-1 py-0.5">
                       <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
@@ -226,11 +225,11 @@ export default function LogisticsPage() {
               <p className="text-[10px] text-slate-400 mt-0.5">Vessel AIS · Pipeline Pressure</p>
             </div>
             <div className="p-3 space-y-3">
-              {/* Vessel CCTV — real images */}
+              {/* Vessel CCTV — real videos */}
               <div className="grid grid-cols-2 gap-1.5">
-                {CCTV_IMAGES.slice(5, 9).map((src, i) => (
+                {CCTV_IMAGES.slice(1, 5).map((src, i) => (
                   <div key={i} className="aspect-video rounded-lg overflow-hidden relative">
-                    <Image src={src} alt={`CCTV Vessel ${i + 1}`} fill style={{ objectFit: "cover" }} />
+                    <video src={src} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
                     <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px)" }} />
                     <div className="absolute top-1 left-1 flex items-center gap-0.5 bg-red-600/90 rounded px-1 py-0.5">
                       <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
@@ -291,7 +290,7 @@ export default function LogisticsPage() {
                 <div className="grid grid-cols-2 gap-1.5">
                   {CCTV_IMAGES.slice(0, 2).map((src, i) => (
                     <div key={i} className="aspect-video rounded-lg overflow-hidden relative">
-                      <Image src={src} alt={`Pipeline CCTV ${i + 1}`} fill style={{ objectFit: "cover" }} />
+                      <video src={src} autoPlay muted loop playsInline className="absolute inset-0 w-full h-full object-cover" />
                       <div className="absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px)" }} />
                       <div className="absolute top-1 right-1 flex items-center gap-0.5 bg-amber-500/90 rounded px-1 py-0.5">
                         <AlertTriangle size={6} className="text-white" />
